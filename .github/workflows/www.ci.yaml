@@ -28,4 +28,4 @@ jobs:
         run: pnpm install
       - name: Run CI
         working-directory: www
-        run: pnpm ci
+        run: pnpm run ci
