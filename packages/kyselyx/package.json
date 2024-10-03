@@ -1,0 +1,45 @@
+{
+  "name": "kyselyx",
+  "version": "0.0.1",
+  "private": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "type": "module",
+  "description": "A CLI for migrations and seeding with kysely.",
+  "bin": {
+    "kyselyx": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "rollup -c rollup.config.js",
+    "watch": "rollup -c rollup.config.js -w",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "exports:check": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
+    "test": "vitest run",
+    "ci": "pnpm run build && pnpm run format:check && pnpm run exports:check && pnpm run test"
+  },
+  "keywords": [
+    "kysely",
+    "migrations",
+    "seeding",
+    "cli",
+    "sql",
+    "typescript"
+  ],
+  "author": "Spencer Duball <spencerduball@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.16.4",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "@types/node": "^22.7.4",
+    "prettier": "^3.3.3",
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "rollup": "^4.24.0",
+    "tslib": "^2.7.0",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.2"
+  }
+}

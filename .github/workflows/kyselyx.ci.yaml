@@ -1,0 +1,31 @@
+name: kyselyx.ci
+
+on:
+  pull_request:
+    paths:
+      - "packages/kyselyx/**"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Run CI
+        working-directory: packages/kyselyx
+        run: pnpm ci

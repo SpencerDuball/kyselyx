@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "name": "kyselyx-root",
+  "description": "A CLI for migrations and seeding with kysely.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SpencerDuball/kyselyx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SpencerDuball/kyselyx/issues"
+  },
+  "homepage": "https://kyselyx.github.io",
+  "author": "Spencer Duball <spencerduball@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.27.8"
+  },
+  "scripts": {
+    "ci:publish": "pnpm publish -r"
+  }
+}
