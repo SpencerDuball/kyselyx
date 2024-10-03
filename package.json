@@ -16,6 +16,6 @@
     "@changesets/cli": "^2.27.8"
   },
   "scripts": {
-    "publish": "pnpm build -r && changeset publish"
+    "publish": "pnpm -r build && changeset publish"
   }
 }
