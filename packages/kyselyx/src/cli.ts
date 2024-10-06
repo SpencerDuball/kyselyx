@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import "tsx/esm";
 import { loadKyselyxConfig } from "./config.js";
-import { new_ } from "./migrate.js";
+import * as migrate from "./migrate.js";
 
 async function main() {
   const program = new Command();
@@ -12,7 +12,9 @@ async function main() {
 
   await loadKyselyxConfig(program.opts());
 
-  program.command("db:migrate:new <name>").description("Create a new migration file.").action(new_);
+  program.command("db:migrate").description("Run all pending migrations.").action(migrate.migrate);
+  program.command("db:migrate:status").description("Show the status of all migrations.").action(migrate.status);
+  program.command("db:migrate:new <name>").description("Create a new migration file.").action(migrate.new_);
 
   program.parse();
 }
