@@ -3,6 +3,10 @@ import { Kysely } from "kysely";
 import path from "path";
 import { z } from "zod";
 
+export const MIGRATION_TABLE_NAME = "kyselyx_migration";
+export const MIGRATION_LOCK_TABLE_NAME = "kyselyx_migration_lock";
+export const SEED_TABLE_NAME = "kyselyx_seed";
+
 // -------------------------------------------------------------------------------------------------
 // Config File
 // -------------------------------------------------------------------------------------------------
@@ -36,6 +40,7 @@ export interface IConfigFile<T extends DefaultStores = DefaultStores> extends z.
 // after parsing the options from the config file and applying defaults.
 // -------------------------------------------------------------------------------------------------
 const ZConfig = z.object({
+  configFile: z.string(),
   stores: z.object({ db: z.instanceof(Kysely) }).passthrough(),
   migrationsFolder: z.string(),
   seedsFolder: z.string(),
@@ -113,6 +118,9 @@ export async function loadKyselyxConfig(cli: ICliOptions) {
   // set the 'migrationsFolder' and 'seedsFolder'
   cfg.migrationsFolder = cli.migrationsFolder || cfg.migrationsFolder;
   cfg.seedsFolder = cli.seedsFolder || cfg.seedsFolder;
+
+  // set the configFile
+  cfg.configFile = filePath;
 
   _config = ZConfig.parse(cfg);
 }
