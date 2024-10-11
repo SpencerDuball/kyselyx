@@ -1,121 +1,80 @@
+import { randomBytes } from "crypto";
 import fs from "fs-extra";
 import path from "path";
-import { afterAll, beforeEach, describe, expect, test } from "vitest";
-import { loadKyselyxConfig } from "../src/config";
+import { afterEach, beforeEach, expect, test } from "vitest";
+import { getConfig, loadKyselyxConfig } from "../src/config";
+import {
+  setupKyselyxConfigV1,
+  setupKyselyxConfigV2,
+  setupKyselyxConfigV3,
+  setupKyselyxConfigV4,
+  setupKyselyxConfigV5,
+  setupKyselyxConfigV6,
+} from "./utils/config.js";
 
-// Different tests files may run in parallel, using a directory with a unique name ensures tests
-// will not interfere with each other.
-const TEST_DIR = path.resolve(__dirname, "testdir-6452eab0");
-
+let TEST_DIR: string;
 beforeEach(async () => {
-  // ensure each tests starts with a clean directory
+  TEST_DIR = path.resolve(__dirname, `testdir-${randomBytes(4).toString("hex")}`);
   await fs.rm(TEST_DIR, { recursive: true, force: true });
   await fs.mkdir(TEST_DIR);
   process.chdir(TEST_DIR);
 });
 
-describe("handles config file when config", () => {
-  test("is 'kyselyx.config.ts' file", async () => {
-    // create the config file
-    const kyselyxConfigTs = [
-      'import SQLite from "better-sqlite3";',
-      'import { Kysely, SqliteDialect } from "kysely";',
-      "",
-      "const config = {",
-      "  stores: {",
-      '    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite(":memory:") }) }),',
-      "  },",
-      "};",
-      "",
-      "export default config;",
-    ].join("\n");
-    await fs.writeFile(path.resolve(TEST_DIR, "kyselyx.config.ts"), kyselyxConfigTs);
-    expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  });
-
-  test("is 'kyselyx.config.js' file", async () => {
-    // create the config file
-    const kyselyxConfigJs = [
-      'import SQLite from "better-sqlite3";',
-      'import { Kysely, SqliteDialect } from "kysely";',
-      "",
-      "const config = {",
-      "  stores: {",
-      '    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite(":memory:") }) }),',
-      "  },",
-      "};",
-      "",
-      "export default config;",
-    ].join("\n");
-    await fs.writeFile(path.resolve(TEST_DIR, "kyselyx.config.js"), kyselyxConfigJs);
-    expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  });
-
-  test("is '.config/kyselyx.config.ts' file", async () => {
-    // create the config file
-    const kyselyxConfigTs = [
-      'import SQLite from "better-sqlite3";',
-      'import { Kysely, SqliteDialect } from "kysely";',
-      "",
-      "const config = {",
-      "  stores: {",
-      '    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite(":memory:") }) }),',
-      "  },",
-      "};",
-      "",
-      "export default config;",
-    ].join("\n");
-    await fs.ensureDir(path.resolve(TEST_DIR, ".config"));
-    await fs.writeFile(path.resolve(TEST_DIR, ".config", "kyselyx.config.ts"), kyselyxConfigTs);
-    expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  });
-
-  test("is '.config/kyselyx.config.js' file", async () => {
-    // create the config file
-    const kyselyxConfigJs = [
-      'import SQLite from "better-sqlite3";',
-      'import { Kysely, SqliteDialect } from "kysely";',
-      "",
-      "const config = {",
-      "  stores: {",
-      '    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite(":memory:") }) }),',
-      "  },",
-      "};",
-      "",
-      "export default config;",
-    ].join("\n");
-    await fs.ensureDir(path.resolve(TEST_DIR, ".config"));
-    await fs.writeFile(path.resolve(TEST_DIR, ".config", "kyselyx.config.js"), kyselyxConfigJs);
-    expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  });
-
-  test("is '.random/spaghetti.ts' file with CLI option", async () => {
-    // create the config file
-    const spaghettiTs = [
-      'import SQLite from "better-sqlite3";',
-      'import { Kysely, SqliteDialect } from "kysely";',
-      "",
-      "const config = {",
-      "  stores: {",
-      '    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite(":memory:") }) }),',
-      "  },",
-      "};",
-      "",
-      "export default config;",
-    ].join("\n");
-    await fs.ensureDir(path.resolve(TEST_DIR, "random"));
-    await fs.writeFile(path.resolve(TEST_DIR, "random", "spaghetti.ts"), spaghettiTs);
-    expect(loadKyselyxConfig({ file: "random/spaghetti.ts" })).resolves.not.toThrowError(
-      "Could not find Kyselyx configuration file.",
-    );
-  });
-
-  test("is missing", async () => {
-    expect(loadKyselyxConfig({})).rejects.toThrowError("Could not find Kyselyx configuration file.");
-  });
+afterEach(async () => {
+  await fs.rm(TEST_DIR, { recursive: true, force: true });
 });
 
-afterAll(async () => {
-  // cleanup
-  await fs.rm(TEST_DIR, { recursive: true, force: true });
+test("with 'kyselyx.config.ts' in root, implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+  // ensure config file can be read correctly
+  await setupKyselyxConfigV1(TEST_DIR);
+  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
+  expect(getConfig().configFile).toBe("kyselyx.config.ts");
+  expect(getConfig().migrationsFolder).toBe("migrations");
+  expect(getConfig().seedsFolder).toBe("seeds");
+});
+
+test("with 'kyselyx.config.js' in root, implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+  await setupKyselyxConfigV2(TEST_DIR);
+  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
+  expect(getConfig().configFile).toBe("kyselyx.config.js");
+  expect(getConfig().migrationsFolder).toBe("migrations");
+  expect(getConfig().seedsFolder).toBe("seeds");
+});
+
+test("with '.config/kyselyx.config.ts', implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+  await setupKyselyxConfigV3(TEST_DIR);
+  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
+  expect(getConfig().configFile).toBe(".config/kyselyx.config.ts");
+  expect(getConfig().migrationsFolder).toBe("migrations");
+  expect(getConfig().seedsFolder).toBe("seeds");
+});
+
+test("with '.config/kyselyx.config.js', implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+  await setupKyselyxConfigV4(TEST_DIR);
+  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
+  expect(getConfig().configFile).toBe(".config/kyselyx.config.js");
+  expect(getConfig().migrationsFolder).toBe("migrations");
+  expect(getConfig().seedsFolder).toBe("seeds");
+});
+
+test("with '.random/spaghetti.ts' Kyselyx config file, CLI supplied 'migrationsFolder', CLI supplied 'seedsFolder'", async () => {
+  await setupKyselyxConfigV5(TEST_DIR);
+  await expect(
+    loadKyselyxConfig({
+      file: ".random/spaghetti.ts",
+      migrationsFolder: ".random/migrations",
+      seedsFolder: ".random/seeds",
+    }),
+  ).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
+  expect(getConfig().configFile).toBe(".random/spaghetti.ts");
+  expect(getConfig().migrationsFolder).toBe(".random/migrations");
+  expect(getConfig().seedsFolder).toBe(".random/seeds");
+});
+
+test("with 'kyselyx.config.ts' in root, explicit 'migrationsFolder', explicit 'seedsFolder'", async () => {
+  await setupKyselyxConfigV6(TEST_DIR);
+  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
+  expect(getConfig().configFile).toBe("kyselyx.config.ts");
+  expect(getConfig().migrationsFolder).toBe(".kyselyx/migrations");
+  expect(getConfig().seedsFolder).toBe(".kyselyx/seeds");
 });
