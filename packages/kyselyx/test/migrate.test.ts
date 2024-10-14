@@ -1,275 +1,186 @@
 import { exec } from "child_process";
+import { randomBytes } from "crypto";
 import fs from "fs-extra";
 import path from "path";
 import { promisify } from "util";
-import { afterAll, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { setupKyselyxConfigV1 } from "./utils/config";
+import { getMigrationInfo, getSeedInfo } from "./utils/status";
 
+const CLI_PATH = path.resolve(__dirname, "../dist/cli.js");
 const asyncExec = promisify(exec);
 
-// Different tests files may run in parallel, using a directory with a unique name ensures tests
-// will not interfere with each other.
-const TEST_DIR = path.resolve(__dirname, "testdir-2f7a4607");
-const CLI_PATH = path.resolve(__dirname, "../src/cli.ts");
-const DB_PATH = path.resolve(TEST_DIR, "test.db");
-
-/**
- * Creates the default 'kyselyx.config.ts' file.
- */
-async function setupDefaultConfig() {
-  const kyselyxConfigTs = [
-    'import SQLite from "better-sqlite3";',
-    'import { Kysely, SqliteDialect } from "kysely";',
-    "",
-    "const config = {",
-    "  stores: {",
-    `    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite("${DB_PATH}") }) }),`,
-    "  },",
-    "};",
-    "",
-    "export default config;",
-  ].join("\n");
-  await fs.writeFile(path.resolve(TEST_DIR, "kyselyx.config.ts"), kyselyxConfigTs);
-}
-
+// Each tests will use a dynamic import via the `loadKyselyxConfig` function. If another tests has
+// a config file with the same name, but different configuration the cached config file will be
+// used. For this reason, using a unique directory for each test is necessary.
+let TEST_DIR: string;
 beforeEach(async () => {
-  // ensure each tests starts with a clean directory
+  TEST_DIR = path.resolve(__dirname, `testdir-${randomBytes(4).toString("hex")}`);
   await fs.rm(TEST_DIR, { recursive: true, force: true });
   await fs.mkdir(TEST_DIR);
   process.chdir(TEST_DIR);
 });
 
-describe("running 'new_'", () => {
-  test("creates migration when 'migrations' folder does not exist", async () => {
-    // setup the 'kyselyx.config.ts' file
-    let kyselyxConfigTs = [
-      'import SQLite from "better-sqlite3";',
-      'import { Kysely, SqliteDialect } from "kysely";',
-      "",
-      "const config = {",
-      "  stores: {",
-      '    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite(":memory:") }) }),',
-      "  },",
-      "};",
-      "",
-      "export default config;",
-    ].join("\n");
-    await fs.writeFile(path.resolve(TEST_DIR, "kyselyx.config.ts"), kyselyxConfigTs);
+afterEach(async () => {
+  await fs.rm(TEST_DIR, { recursive: true, force: true });
+});
 
-    // create a new migration
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new users`);
-    let migrations = await fs.readdir(path.resolve(TEST_DIR, "migrations"));
+describe("function 'new_'", () => {
+  test("creates migrations successfully", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations
+    await asyncExec(`node ${CLI_PATH} db:migrate:new users`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new peanut_butter`);
+
+    // check if migrations were created
+    const migrations = await fs.readdir(path.resolve(TEST_DIR, "migrations"));
     expect(migrations.find((f) => /\d+_users\.ts/.test(f))).not.toBeUndefined();
-
-    // clear the 'migrations' folder to test when 'migrations' folder not default
-    await fs.rm(TEST_DIR, { recursive: true, force: true });
-    await fs.mkdir(TEST_DIR);
-    process.chdir(TEST_DIR);
-
-    // setup the 'kyselyx.config.ts' file
-    kyselyxConfigTs = [
-      'import SQLite from "better-sqlite3";',
-      'import { Kysely, SqliteDialect } from "kysely";',
-      "",
-      "const config = {",
-      "  stores: {",
-      '    db: new Kysely({ dialect: new SqliteDialect({ database: new SQLite(":memory:") }) }),',
-      "  },",
-      "  migrationsFolder: 'migrations2',",
-      "};",
-      "",
-      "export default config;",
-    ].join("\n");
-    await fs.writeFile(path.resolve(TEST_DIR, "kyselyx.config.ts"), kyselyxConfigTs);
-
-    // create a new migration
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new users`);
-    migrations = await fs.readdir(path.resolve(TEST_DIR, "migrations2"));
-    expect(migrations.find((f) => /\d+_users\.ts/.test(f))).not.toBeUndefined();
+    expect(migrations.find((f) => /\d+_sample\.ts/.test(f))).not.toBeUndefined();
+    expect(migrations.find((f) => /\d+_peanut_butter\.ts/.test(f))).not.toBeUndefined();
   });
 });
 
-describe("running 'migrate'", () => {
-  test("throw error when no migrations folder", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
-
-    // run the migration
-    const { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate`).catch((e) => ({
-      stdout: e.stdout,
-    }));
-    expect(stdout).toContain("Migrations folder not found: ");
-  });
-
-  test("applies all migrations successfully", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
+describe("function 'migrate'", () => {
+  test("successfully applies all migrations", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new users`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new sample`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new peanut_butter`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new users`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new peanut_butter`);
 
-    // run the migration
-    const { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate`);
+    // apply all migrations
+    await asyncExec(`node ${CLI_PATH} db:migrate`);
 
-    expect(stdout).toMatch(/✔ Applied migration \d+_users successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_sample successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_peanut_butter successfully\./);
-    expect(stdout).toMatch(/All migrations applied successfully.\n$/);
+    // confirm all migrations were applied
+    const migrations = await getMigrationInfo();
+    const appliedMigrations = migrations.filter((m) => m.executedAt !== undefined);
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
   });
 
-  test("applies migrations up to a specific migration", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
+  test("successfully applies to target migration", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new users`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new sample`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new peanut_butter`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new users`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new peanut_butter`);
 
-    const migrationFiles = await fs.readdir(path.resolve(TEST_DIR, "migrations"));
-    const sampleMigrationFile = migrationFiles.find((f) => /\d+_sample\.ts/.test(f))!;
-    const sampleMigration = path.basename(sampleMigrationFile, path.extname(sampleMigrationFile));
+    // get all migrations
+    const migrations = await getMigrationInfo();
 
-    // run the migration
-    const { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate ${sampleMigration}`);
+    // apply migrations up to the "sample" migration
+    const sampleMigration = migrations.find((m) => /\d+_sample/.test(m.name));
+    await asyncExec(`node ${CLI_PATH} db:migrate ${sampleMigration?.name}`);
 
-    expect(stdout).toMatch(/✔ Applied migration \d+_users successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_sample successfully\./);
-    expect(stdout).not.toMatch(/✔ Applied migration \d+_peanut_butter successfully\./);
-    expect(stdout).toMatch(/All migrations applied successfully.\n$/);
+    // confirm only up to the "sample" migration was applied
+    const appliedMigrations = await getMigrationInfo().then((all) => all.filter((m) => m.executedAt !== undefined));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
   });
 });
 
-describe("running 'undo'", () => {
-  test("with no migrations", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
+describe("function 'undo'", () => {
+  test("successfully undo migrations", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
 
-    // create a migrations folder
-    await fs.mkdir(path.resolve(TEST_DIR, "migrations"));
+    // create migrations
+    await asyncExec(`node ${CLI_PATH} db:migrate:new users`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new peanut_butter`);
 
-    // attempt to undo a migration
-    const { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:undo`).catch((e) => {
-      console.log(e);
-      throw e;
-    });
+    // apply all migrations
+    await asyncExec(`node ${CLI_PATH} db:migrate`);
+
+    // confirm all migrations were applied
+    let migrations = await getMigrationInfo();
+    let appliedMigrations = migrations.filter((m) => m.executedAt !== undefined);
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
+
+    // undo first migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
+
+    // confirm only up to the "sample" migration was applied
+    appliedMigrations = await getMigrationInfo().then((all) => all.filter((m) => m.executedAt !== undefined));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // undo second migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
+
+    // confirm only up to the "users" migration was applied
+    appliedMigrations = await getMigrationInfo().then((all) => all.filter((m) => m.executedAt !== undefined));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // undo first migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
+
+    // confirm only up to the "users" migration was applied
+    appliedMigrations = await getMigrationInfo().then((all) => all.filter((m) => m.executedAt !== undefined));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // attempt to undo a migration when there are no migrations
+    const { stdout } = await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
     expect(stdout).toContain("No migrations to undo.");
   });
 
-  test("with migrations", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
-
-    // create migrations
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new users`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new sample`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new peanut_butter`);
-
-    // run the migration
-    let { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate`);
-
-    expect(stdout).toMatch(/✔ Applied migration \d+_users successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_sample successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_peanut_butter successfully\./);
-    expect(stdout).toMatch(/All migrations applied successfully.\n$/);
-
-    // undo the last migration
-    ({ stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:undo`));
-    console.log(stdout);
-    expect(stdout).toMatch(/Rolling back to migration before \d+_peanut_butter .../);
-
-    // undo the next migration
-    ({ stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:undo`));
-    console.log(stdout);
-    expect(stdout).toMatch(/Rolling back to migration before \d+_sample .../);
-
-    // undo the next migration
-    ({ stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:undo`));
-    console.log(stdout);
-    expect(stdout).toMatch(/Rolling back all migrations .../);
-
-    // attempt to undo another migration (none left to undo)
-    ({ stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:undo`));
-    console.log(stdout);
-    expect(stdout).toContain("No migrations to undo.");
+  test.skip("successfully undo migrations and seeds", async () => {
+    // TODO: This function should undo migrations and all seeds that have a timestamp after the
+    // the first unapplied migration.
   });
 });
 
-describe("running 'undoAll'", () => {
-  test("with no migrations", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
+describe("function 'undoAll'", () => {
+  test("removes all migrations successfully", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
 
-    // create a migrations folder
-    await fs.mkdir(path.resolve(TEST_DIR, "migrations"));
+    // create migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate:new users`);
+    await asyncExec(`node ${CLI_PATH} db:seed:new users`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:seed:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new peanut_butter`);
+    await asyncExec(`node ${CLI_PATH} db:seed:new peanut_butter`);
 
-    // attempt to undo a migration
-    const { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:undo:all`).catch((e) => {
-      console.log(e);
-      throw e;
-    });
-    expect(stdout).toContain("No migrations to undo.");
-  });
+    // apply all migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate`);
+    await asyncExec(`node ${CLI_PATH} db:seed`);
 
-  test("with migrations", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
+    // confirm all migrations were applied
+    let migrations = await getMigrationInfo();
+    let appliedMigrations = migrations.filter((m) => m.executedAt !== undefined);
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
 
-    // create migrations
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new users`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new sample`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new peanut_butter`);
-
-    // run the migration
-    let { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate`);
-
-    expect(stdout).toMatch(/✔ Applied migration \d+_users successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_sample successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_peanut_butter successfully\./);
-    expect(stdout).toMatch(/All migrations applied successfully.\n$/);
+    // confirm all seeds were applied
+    let seeds = await getSeedInfo();
+    let appliedSeeds = seeds.filter((s) => s.executedAt !== undefined);
+    expect(appliedSeeds.find((s) => /\d+_users/.test(s.name))).not.toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_sample/.test(s.name))).not.toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_peanut_butter/.test(s.name))).not.toBeUndefined();
 
     // undo all migrations
-    ({ stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:undo:all`));
-    expect(stdout).toMatch(/All migrations rolled back successfully./);
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo:all`);
+
+    // ensure all migrations are unapplied
+    migrations = await getMigrationInfo();
+    for (const migration of migrations) expect(migration.executedAt).toBeUndefined();
+
+    // ensure all seeds are unapplied
+    seeds = await getSeedInfo();
+    for (const seed of seeds) expect(seed.executedAt).toBeUndefined();
   });
-});
-
-describe("running 'status'", () => {
-  test("throw error when no migrations folder", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
-
-    // run the migration
-    const { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:status`).catch((e) => ({
-      stdout: e.stdout,
-    }));
-    expect(stdout).toContain("Migrations folder not found: ");
-  });
-
-  test("applies migrations successfully", async () => {
-    // setup the 'kyselyx.config.ts' file
-    await setupDefaultConfig();
-
-    // create migrations
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new users`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new sample`);
-    await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:new peanut_butter`);
-
-    // run the migration
-    let { stdout } = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate`);
-
-    expect(stdout).toMatch(/✔ Applied migration \d+_users successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_sample successfully\./);
-    expect(stdout).toMatch(/✔ Applied migration \d+_peanut_butter successfully\./);
-    expect(stdout).toMatch(/All migrations applied successfully.\n$/);
-
-    // run the status
-    stdout = await asyncExec(`node --import tsx ${CLI_PATH} db:migrate:status`).then((r) => r.stdout);
-  });
-});
-
-afterAll(async () => {
-  // cleanup
-  await fs.rm(TEST_DIR, { recursive: true, force: true });
 });

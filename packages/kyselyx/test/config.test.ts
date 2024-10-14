@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import fs from "fs-extra";
 import path from "path";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { getConfig, loadKyselyxConfig } from "../src/config";
+import { getConfig, loadKyselyxConfig } from "../src/config.js";
 import {
   setupKyselyxConfigV1,
   setupKyselyxConfigV2,
@@ -12,6 +12,9 @@ import {
   setupKyselyxConfigV6,
 } from "./utils/config.js";
 
+// Each tests will use a dynamic import via the `loadKyselyxConfig` function. If another tests has
+// a config file with the same name, but different configuration the cached config file will be
+// used. For this reason, using a unique directory for each test is necessary.
 let TEST_DIR: string;
 beforeEach(async () => {
   TEST_DIR = path.resolve(__dirname, `testdir-${randomBytes(4).toString("hex")}`);

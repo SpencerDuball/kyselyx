@@ -67,7 +67,7 @@ const ZCliOptions = z.object({
    */
   seedsFolder: z.string().optional(),
 });
-type ICliOptions = z.infer<typeof ZCliOptions>;
+export type ICliOptions = z.infer<typeof ZCliOptions>;
 
 // -------------------------------------------------------------------------------------------------
 
