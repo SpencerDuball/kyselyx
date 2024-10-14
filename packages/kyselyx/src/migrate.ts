@@ -3,6 +3,8 @@ import { FileMigrationProvider, Migrator, NO_MIGRATIONS, type MigrationInfo, typ
 import ora from "ora";
 import path from "path";
 import { getConfig, MIGRATION_LOCK_TABLE_NAME, MIGRATION_TABLE_NAME } from "./config.js";
+import * as seed from "./seed.js";
+import { getTimestamp } from "./utils.js";
 
 const template = [
   `import { Kysely, sql } from "kysely";`,
@@ -27,7 +29,7 @@ export async function migrate(name?: string) {
   } = getConfig();
   feed.clear();
 
-  // apply the migrations
+  // create the migrator
   if (!fs.existsSync(migrationsFolder)) {
     feed.fail(`Migrations folder not found: ${migrationsFolder}`);
     process.exit(1);
@@ -40,6 +42,10 @@ export async function migrate(name?: string) {
     migrationLockTableName: MIGRATION_LOCK_TABLE_NAME,
   });
 
+  // ensure the migration files have correct naming
+  await migrator.getMigrations().then((all) => all.forEach((m) => getTimestamp(m)));
+
+  // apply the migrations
   let error: unknown;
   let results: MigrationResult[] | undefined;
 
@@ -94,6 +100,9 @@ export async function status() {
   });
   const migrations = await migrator.getMigrations();
 
+  // ensure the migration files have correct naming
+  migrations.forEach((m) => getTimestamp(m));
+
   // collect a snapshot of the migrations info
   let lastAppliedMigration: MigrationInfo | null = null;
   let totalAppliedMigrations = 0;
@@ -146,8 +155,11 @@ export async function undo(name?: string) {
     migrationLockTableName: MIGRATION_LOCK_TABLE_NAME,
   });
   const migrations = await migrator.getMigrations();
-  const appliedMigrations = migrations.filter((m) => m.executedAt !== undefined);
 
+  // ensure the migration files have correct naming
+  migrations.forEach((m) => getTimestamp(m));
+
+  const appliedMigrations = migrations.filter((m) => m.executedAt !== undefined);
   if (appliedMigrations.length === 0) {
     feed.succeed("No migrations to undo.");
   } else {
@@ -203,11 +215,11 @@ export async function undoAll() {
   const {
     stores: { db },
     migrationsFolder,
-    seedsFolder,
   } = getConfig();
   feed.clear();
 
   // undo all seeds
+  await seed.undoAll();
 
   // undo all migrations
   if (!fs.existsSync(migrationsFolder)) {
@@ -225,6 +237,10 @@ export async function undoAll() {
   // get all migrations
   feed.text = "Getting all migrations ...";
   const migrations = await migrator.getMigrations();
+
+  // ensure the migration files have correct naming
+  migrations.forEach((m) => getTimestamp(m));
+
   let totalAppliedMigrations = 0;
   for (let migration of migrations) migration.executedAt && totalAppliedMigrations++;
 
