@@ -45,7 +45,7 @@ const ZConfig = z.object({
   migrationsFolder: z.string(),
   seedsFolder: z.string(),
 });
-type IConfig = z.infer<typeof ZConfig>;
+export type IConfig = z.infer<typeof ZConfig>;
 
 // -------------------------------------------------------------------------------------------------
 // CLI Input
