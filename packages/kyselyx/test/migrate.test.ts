@@ -132,13 +132,86 @@ describe("function 'undo'", () => {
     expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
 
     // attempt to undo a migration when there are no migrations
-    const { stdout } = await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
+    const { stdout } = await asyncExec(`node ${CLI_PATH} db:migrate:undo`).catch((e) => {
+      console.log(e);
+      process.exit(1);
+    });
     expect(stdout).toContain("No migrations to undo.");
   });
 
-  test.skip("successfully undo migrations and seeds", async () => {
-    // TODO: This function should undo migrations and all seeds that have a timestamp after the
-    // the first unapplied migration.
+  test("successfully undo migrations and seeds", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate:new users`);
+    await asyncExec(`node ${CLI_PATH} db:seed:new users`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:seed:new sample`);
+    await asyncExec(`node ${CLI_PATH} db:migrate:new peanut_butter`);
+    await asyncExec(`node ${CLI_PATH} db:seed:new peanut_butter`);
+
+    // apply all migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate`);
+    await asyncExec(`node ${CLI_PATH} db:seed`);
+
+    // confirm all migrations were applied
+    let migrations = await getMigrationInfo();
+    let appliedMigrations = migrations.filter((m) => m.executedAt !== undefined);
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
+
+    // confirm all seeds were applied
+    let seeds = await getSeedInfo();
+    let appliedSeeds = seeds.filter((s) => s.executedAt !== undefined);
+    expect(appliedSeeds.find((s) => /\d+_users/.test(s.name))).not.toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_sample/.test(s.name))).not.toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_peanut_butter/.test(s.name))).not.toBeUndefined();
+
+    // undo first migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
+
+    // confirm only up to the "sample" migration was applied
+    appliedMigrations = await getMigrationInfo().then((all) => all.filter((m) => m.executedAt !== undefined));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // confirm only up to the "sample" seed was applied
+    appliedSeeds = await getSeedInfo().then((all) => all.filter((s) => s.executedAt !== undefined));
+    expect(appliedSeeds.find((s) => /\d+_users/.test(s.name))).not.toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_sample/.test(s.name))).not.toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_peanut_butter/.test(s.name))).toBeUndefined();
+
+    // undo second migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
+
+    // confirm only up to the "users" migration was applied
+    appliedMigrations = await getMigrationInfo().then((all) => all.filter((m) => m.executedAt !== undefined));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // confirm only up to the "users" seed was applied
+    appliedSeeds = await getSeedInfo().then((all) => all.filter((s) => s.executedAt !== undefined));
+    expect(appliedSeeds.find((s) => /\d+_users/.test(s.name))).not.toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_sample/.test(s.name))).toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_peanut_butter/.test(s.name))).toBeUndefined();
+
+    // undo third migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`);
+
+    // confirm only up to the "users" migration was applied
+    appliedMigrations = await getMigrationInfo().then((all) => all.filter((m) => m.executedAt !== undefined));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // confirm only up to the "users" seed was applied
+    appliedSeeds = await getSeedInfo().then((all) => all.filter((s) => s.executedAt !== undefined));
+    expect(appliedSeeds.find((s) => /\d+_users/.test(s.name))).toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_sample/.test(s.name))).toBeUndefined();
+    expect(appliedSeeds.find((s) => /\d+_peanut_butter/.test(s.name))).toBeUndefined();
   });
 });
 
