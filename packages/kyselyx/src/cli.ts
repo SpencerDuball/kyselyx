@@ -2,6 +2,7 @@ import { Command } from "commander";
 import "tsx/esm";
 import { loadKyselyxConfig } from "./config.js";
 import * as migrate from "./migrate.js";
+import * as seed from "./seed.js";
 
 async function main() {
   const program = new Command();
@@ -113,11 +114,12 @@ async function main() {
   program
     .command("generate:seed")
     .argument("<name>", "The name of the seed to create.")
+    .option("--js", "Generate a JavaScript seed file.")
     .summary("Generates a new seed file")
     .description(
       "Creates a new seed file with the specified name. Note that the name will have a timestamp prepended to it.",
     )
-    .action(() => console.log("Hello from generate:seed!"));
+    .action(seed.generate);
 
   program.parse();
 }

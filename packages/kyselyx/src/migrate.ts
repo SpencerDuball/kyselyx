@@ -167,6 +167,8 @@ export async function undoAll() {
  * Generates a new migration file.
  *
  * @param name The label of the migration to generate.
+ * @param opts Options for generating the migration file.
+ * @param opts.js Generate a JavaScript migration file.
  */
 export async function generate(name: string, opts = { js: false }) {
   const { migrationsFolder } = getConfig().match((i) => i, exitFailure);
@@ -175,7 +177,11 @@ export async function generate(name: string, opts = { js: false }) {
   let feed = ora({ stream: process.stdout }).start("Generating migration ...");
   const migrationId = `${Date.now()}_${name}`;
   await fs.ensureDir(migrationsFolder);
-  if (opts.js) await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.js`), templateJs);
-  else await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.ts`), templateTs);
-  feed.succeed(`Created migration file: "${migrationId}.ts"`);
+  if (opts.js) {
+    await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.js`), templateJs);
+    feed.succeed(`Created migration file: "${migrationId}.js"`);
+  } else {
+    await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.ts`), templateTs);
+    feed.succeed(`Created migration file: "${migrationId}.ts"`);
+  }
 }
