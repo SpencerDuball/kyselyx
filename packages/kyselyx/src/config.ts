@@ -1,7 +1,9 @@
 import fs from "fs-extra";
 import { Kysely } from "kysely";
+import { err, ok, Result, ResultAsync } from "neverthrow";
 import path from "path";
 import { z } from "zod";
+import { ConfigError } from "./utils.js";
 
 export const MIGRATION_TABLE_NAME = "kyselyx_migration";
 export const MIGRATION_LOCK_TABLE_NAME = "kyselyx_migration_lock";
@@ -78,15 +80,52 @@ let _config: IConfig | null = null;
  *
  * Note: This should be called only after `loadKyselyxConfig` has been called.
  */
-export function getConfig() {
-  if (!_config) throw new Error("Kyselyx configuration not loaded.");
-  return _config;
+export function getConfig(): Result<IConfig, ConfigError> {
+  if (!_config) return err(new ConfigError("Kyselyx configuration not loaded."));
+  else return ok(_config);
+}
+
+/**
+ * Handles errors when importing the Kyselyx configuration file.
+ *
+ * @see loadKyselyxConfig This function is called by `loadKyselyxConfig`.
+ */
+function handleImportErrors(err: any): ConfigError {
+  if (err instanceof Error) return new ConfigError(err.message);
+  else return new ConfigError("Could not load Kyselyx configuration file.");
+}
+
+/**
+ * Extracts the default export from a module.
+ *
+ * @see loadKyselyxConfig This function is called by `loadKyselyxConfig`.
+ */
+function getDefaultExport(module: any): Result<any, ConfigError> {
+  if ("default" in module) return ok(module.default);
+  else return err(new ConfigError("Kyselyx configuration file must have a default export."));
+}
+
+/**
+ * Constructs an IConfig object from the module and CLI options.
+ *
+ * @see loadKyselyxConfig This function is called by `loadKyselyxConfig`.
+ */
+function getConfigFile(filePath: string, cli: ICliOptions) {
+  return function (module: any): Result<IConfig, ConfigError> {
+    const parseCfg = ZConfigFile.passthrough().safeParse(module);
+    if (parseCfg.success) {
+      let config = { ...parseCfg.data, configFile: filePath };
+      if (cli.migrationsFolder) config.migrationsFolder = cli.migrationsFolder;
+      if (cli.seedsFolder) config.seedsFolder = cli.seedsFolder;
+      return ok(config);
+    } else return err(parseCfg.error);
+  };
 }
 
 /**
  * Loads the Kyselyx configuration file and applies the CLI options.
  */
-export async function loadKyselyxConfig(cli: ICliOptions) {
+export async function loadKyselyxConfig(cli: ICliOptions): Promise<Result<void, ConfigError>> {
   // check for the config file
   let filePath: string | undefined = undefined;
   if (cli.file) {
@@ -98,29 +137,15 @@ export async function loadKyselyxConfig(cli: ICliOptions) {
       ".config/kyselyx.config.ts",
       ".config/kyselyx.config.js",
     ];
-    for (const p of possibleFilePaths) {
-      if (await fs.exists(p)) {
-        filePath = p;
-        break;
-      }
-    }
+    for (const p of possibleFilePaths) if (await fs.exists(p)) filePath = p;
   }
-  if (!filePath) throw new Error("Could not find Kyselyx configuration file.");
+  if (!filePath) return err(new ConfigError("Could not find Kyselyx configuration file."));
 
-  // load and validate the config file
-  const { default: _cfg } = await import(path.resolve(process.cwd(), filePath));
-  const cfg = ZConfigFile.passthrough()
-    .catch(({ error }) => {
-      throw new Error(`There are errors in your kyselyx config file: ${error.message}`);
-    })
-    .parse(_cfg);
-
-  // set the 'migrationsFolder' and 'seedsFolder'
-  cfg.migrationsFolder = cli.migrationsFolder || cfg.migrationsFolder;
-  cfg.seedsFolder = cli.seedsFolder || cfg.seedsFolder;
-
-  // set the configFile
-  cfg.configFile = filePath;
-
-  _config = ZConfig.parse(cfg);
+  return ResultAsync.fromPromise(import(path.resolve(process.cwd(), filePath)), handleImportErrors)
+    .andThen(getDefaultExport)
+    .andThen(getConfigFile(filePath, cli))
+    .andThen((config) => {
+      _config = config;
+      return ok(undefined);
+    });
 }
