@@ -1,40 +1,10 @@
 import fs from "fs-extra";
-import { type MigrationInfo, type NoMigrations, FileMigrationProvider, Migrator } from "kysely";
-import { err, ok, Result, ResultAsync } from "neverthrow";
+import { FileMigrationProvider, type MigrationInfo, Migrator, type NoMigrations } from "kysely";
+import { err, ok, type Result, ResultAsync } from "neverthrow";
 import path from "path";
 import { getConfig, MIGRATION_LOCK_TABLE_NAME, MIGRATION_TABLE_NAME } from "./config.js";
+import { ConfigError, KyselyError, MigrationError, SeedError } from "./errors.js";
 import { type NoSeeds, type SeedInfo } from "./seeder/seed.js";
-
-export class ConfigError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConfigError";
-  }
-}
-export class MigrationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "MigrationError";
-  }
-}
-export class SeedError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "SeedError";
-  }
-}
-export class KyselyError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "KyselyError";
-  }
-}
-export class FileSystemError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "FileSystemError";
-  }
-}
 
 /**
  * Exits the process with a failure message.

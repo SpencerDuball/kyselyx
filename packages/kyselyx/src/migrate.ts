@@ -3,15 +3,8 @@ import { NO_MIGRATIONS, type NoMigrations } from "kysely";
 import ora from "ora";
 import path from "path";
 import { getConfig } from "./config.js";
-import {
-  doesNameMatch,
-  exitFailure,
-  getMigrations,
-  getMigrator,
-  isNoMigrations,
-  MigrationError,
-  type Migration,
-} from "./utils.js";
+import { MigrationError } from "./errors.js";
+import { doesNameMatch, exitFailure, getMigrations, getMigrator, isNoMigrations, type Migration } from "./utils.js";
 
 const template = [
   `import { Kysely, sql } from "kysely";`,
@@ -83,10 +76,14 @@ export async function undo(name?: string) {
     }
   } else {
     if (appliedMigrations.length > 1) migration = appliedMigrations.at(-2);
-    else migration = NO_MIGRATIONS;
+    else if (appliedMigrations.length === 1) migration = NO_MIGRATIONS;
   }
 
-  if (!migration) exitFailure(new MigrationError("Could not find migration to rollback to."));
+  if (!migration) {
+    if (name) feed.fail(`Could not find migration to rollback to.`);
+    else feed.fail(`No migrations to rollback.`);
+    return;
+  }
 
   // TODO: Rollback applicable seeds
 
@@ -105,6 +102,44 @@ export async function undo(name?: string) {
   else feed.succeed("Migrations rolled back successfully.");
 }
 
+/**
+ * Undo all migrations.
+ */
+export async function undoAll() {
+  const migrator = getMigrator().match((i) => i, exitFailure);
+
+  // retrieve all migrations
+  let feed = ora({ stream: process.stdout }).start("Getting migrations ...");
+  const { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
+  feed.clear();
+
+  if (appliedMigrations.length === 0) {
+    feed.fail("No migrations to rollback.");
+    return;
+  }
+
+  // TODO: Rollback applicable seeds
+
+  // rollback all migrations
+  feed.start("Rolling back migrations ...");
+  const { error, results } = await migrator.migrateTo(NO_MIGRATIONS);
+  feed.clear();
+
+  // process the results
+  results?.forEach((it) => {
+    if (it.status === "Success") feed.succeed(`Rolled back migration ${it.migrationName} successfully.`);
+    else if (it.status === "Error") feed.fail(`Failed to rollback migration ${it.migrationName}.`);
+  });
+
+  if (error) exitFailure(new MigrationError("Error rolling back migrations."));
+  else feed.succeed("Migrations rolled back successfully.");
+}
+
+/**
+ * Generates a new migration file.
+ *
+ * @param name The label of the migration to generate.
+ */
 export async function generate(name: string) {
   const { migrationsFolder } = getConfig().match((i) => i, exitFailure);
 

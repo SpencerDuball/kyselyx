@@ -30,9 +30,9 @@ describe("function 'generate'", () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // check if migrations were created
     const migrations = await fs.readdir(path.resolve(TEST_DIR, "migrations"));
@@ -47,9 +47,9 @@ describe("function 'migrate'", () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // apply migrations
     await asyncExec(`node ${CLI_PATH} db:migrate`).catch((e) => console.error(e));
@@ -69,12 +69,12 @@ describe("function 'migrate'", () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // apply migrations
-    await asyncExec(`node ${CLI_PATH} db:migrate sample`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} db:migrate sample`).catch(exitFailure);
 
     // load kyselyx config & get migrations
     await loadKyselyxConfig({});
@@ -91,9 +91,9 @@ describe("function 'migrate'", () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // load kyselyx config & get migrator
     await loadKyselyxConfig({});
@@ -121,9 +121,9 @@ describe("function 'migrate'", () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // load kyselyx config & get migrator
     await loadKyselyxConfig({});
@@ -137,7 +137,7 @@ describe("function 'migrate'", () => {
     const partialTimestamp = sample.timestamp.toString().slice(-3);
 
     // apply migrations
-    await asyncExec(`node ${CLI_PATH} db:migrate ${partialTimestamp}_${sample.label}`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} db:migrate ${partialTimestamp}_${sample.label}`).catch(exitFailure);
 
     // load kyselyx config & get migrations
     const { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
@@ -152,9 +152,9 @@ describe("function 'migrate'", () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // load kyselyx config & get migrator
     await loadKyselyxConfig({});
@@ -175,9 +175,9 @@ describe("function 'migrate'", () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // load kyselyx config & get migrator
     await loadKyselyxConfig({});
@@ -199,29 +199,177 @@ describe("function 'migrate'", () => {
 
 describe("function 'undo'", () => {
   test("successfully reverts migrations without name", async () => {
+    // TODO: Update this test to rollback seeds as well!
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations & seeds
-    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch((e) => console.error(e));
-    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch((e) => console.error(e));
-    // TODO: create the seeds
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
 
     // apply all migrations & seeds
-    await asyncExec(`node ${CLI_PATH} db:migrate`).catch((e) => console.error(e));
-    // TODO: apply all seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate`).catch(exitFailure);
 
     // load kyselyx config, get migrations, get seeds
     await loadKyselyxConfig({});
     const migrator = getMigrator().match((i) => i, exitFailure);
-    const { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
-    // TODO: get appliedSeeds
+    let { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
 
     // confirm all migrations & seeds were applied
     expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
     expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
     expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
 
-    // TODO: finish the test
+    // rollback the first seed & migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`).catch(exitFailure);
+    ({ appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // rollback the second seed & migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`).catch(exitFailure);
+    ({ appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // rollback the third seed & migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo`).catch(exitFailure);
+    ({ appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // try to rollback again, there should be no migrations to rollback
+    const { stdout } = await asyncExec(`node ${CLI_PATH} db:migrate:undo`).catch(exitFailure);
+    expect(stdout).toMatch(/No migrations to rollback./);
+  });
+
+  test("successfully reverts all migrations with name (first migration)", async () => {
+    // TODO: Update this test to rollback seeds as well!
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations & seeds
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
+
+    // apply all migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate`).catch(exitFailure);
+
+    // load kyselyx config, get migrations, get seeds
+    await loadKyselyxConfig({});
+    const migrator = getMigrator().match((i) => i, exitFailure);
+    let { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
+
+    // confirm all migrations & seeds were applied
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
+
+    // drop all migrations up to and including the 'users' migration, this will drop all migrations
+    // since it is the first migration in the list
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo users`).catch(exitFailure);
+    ({ appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+  });
+
+  test("successfully reverts migrations with name (middle migration)", async () => {
+    // TODO: Update this test to rollback seeds as well!
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations & seeds
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
+
+    // apply all migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate`).catch(exitFailure);
+
+    // load kyselyx config, get migrations, get seeds
+    await loadKyselyxConfig({});
+    const migrator = getMigrator().match((i) => i, exitFailure);
+    let { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
+
+    // confirm all migrations & seeds were applied
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
+
+    // drop all migrations up to and including the 'sample' migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo sample`).catch(exitFailure);
+    ({ appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+  });
+
+  test("successfully reverts migrations with name (last migration)", async () => {
+    // TODO: Update this test to rollback seeds as well!
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations & seeds
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
+
+    // apply all migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate`).catch(exitFailure);
+
+    // load kyselyx config, get migrations, get seeds
+    await loadKyselyxConfig({});
+    const migrator = getMigrator().match((i) => i, exitFailure);
+    let { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
+
+    // confirm all migrations & seeds were applied
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
+
+    // drop all migrations up to and including the 'sample' migration
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo peanut_butter`).catch(exitFailure);
+    ({ appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+  });
+});
+
+describe("function 'undoAll'", () => {
+  test("successfully reverts all migrations", async () => {
+    // TODO: Update this test to rollback seeds as well!
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations & seeds
+    await asyncExec(`node ${CLI_PATH} generate:migration users`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter`).catch(exitFailure);
+
+    // apply all migrations & seeds
+    await asyncExec(`node ${CLI_PATH} db:migrate`).catch(exitFailure);
+
+    // load kyselyx config, get migrations, get seeds
+    await loadKyselyxConfig({});
+    const migrator = getMigrator().match((i) => i, exitFailure);
+    let { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
+
+    // confirm all migrations & seeds were applied
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).not.toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).not.toBeUndefined();
+
+    // drop all migrations
+    await asyncExec(`node ${CLI_PATH} db:migrate:undo:all`).catch(exitFailure);
+    ({ appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure));
+    expect(appliedMigrations.find((m) => /\d+_users/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_sample/.test(m.name))).toBeUndefined();
+    expect(appliedMigrations.find((m) => /\d+_peanut_butter/.test(m.name))).toBeUndefined();
+
+    // try to rollback again, there should be no migrations to rollback
+    const { stdout } = await asyncExec(`node ${CLI_PATH} db:migrate:undo:all`).catch(exitFailure);
+    expect(stdout).toMatch(/No migrations to rollback./);
   });
 });

@@ -1,9 +1,9 @@
 import fs from "fs-extra";
 import { Kysely } from "kysely";
-import { err, ok, Result, ResultAsync } from "neverthrow";
+import { err, ok, type Result, ResultAsync } from "neverthrow";
 import path from "path";
 import { z } from "zod";
-import { ConfigError } from "./utils.js";
+import { ConfigError } from "./errors.js";
 
 export const MIGRATION_TABLE_NAME = "kyselyx_migration";
 export const MIGRATION_LOCK_TABLE_NAME = "kyselyx_migration_lock";

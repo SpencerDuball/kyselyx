@@ -37,12 +37,12 @@ async function main() {
     .description(
       "Reverts a single migration, or all migrations up to (and including) the optionally specified migration. Any seeds with a timestamp greater than the reverted migration will also be reverted.",
     )
-    .action((name) => console.log(`Hello from db:migrate:undo [${name}]!`));
+    .action(migrate.undo);
   program
     .command("db:migrate:undo:all")
     .summary("Reverts all applied migrations")
     .description("Reverts all applied migrations and any seeds with a timestamp greater than the first migration.")
-    .action(() => console.log("Hello from db:migrate:undo:all!"));
+    .action(migrate.undoAll);
   program
     .command("db:migrate:status")
     .summary("Shows the status of all migrations")
