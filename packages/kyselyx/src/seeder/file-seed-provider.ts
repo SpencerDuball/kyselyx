@@ -27,11 +27,15 @@ export class FileSeedProvider implements SeedProvider {
 
   async getSeeds(): Promise<Record<string, Seed>> {
     const seeds: Record<string, Seed> = {};
-    const folders = await this.#props.fs.readdir(this.#props.seedFolder);
+    const files = await this.#props.fs
+      .readdir(this.#props.seedFolder)
+      .then((files) => files.filter((file) => /(.ts|.mts|.js|.mjs)$/.test(file)));
 
-    for await (const seedKey of folders) {
-      const file = path.join(this.#props.seedFolder, seedKey, "run.ts");
+    for await (const seedFile of files) {
+      const file = path.join(this.#props.seedFolder, seedFile);
       const seed = await import(file);
+
+      const seedKey = /(?<seedKey>.*)(.ts|.mts|.js|.mjs)/.exec(seedFile)?.groups?.seedKey!;
 
       if (isSeed(seed?.default)) {
         seeds[seedKey] = seed.default;
