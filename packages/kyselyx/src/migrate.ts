@@ -6,12 +6,40 @@ import { getConfig } from "./config.js";
 import { MigrationError } from "./errors.js";
 import { doesNameMatch, exitFailure, getMigrations, getMigrator, isNoMigrations, type Migration } from "./utils.js";
 
-const template = [
+const templateTs = [
   `import { Kysely, sql } from "kysely";`,
   ``,
+  `/**`,
+  ` * The 'up' function runs when the migration is applied.`,
+  ` */`,
   `async function up(db: Kysely<any>): Promise<void> {}`,
   ``,
+  `/**`,
+  ` * The 'down' function runs when the migration is removed.`,
+  ` */`,
   `async function down(db: Kysely<any>): Promise<void> {}`,
+  ``,
+  `export { up, down };`,
+].join("\n");
+
+const templateJs = [
+  `import { Kysely, sql } from "kysely";`,
+  ``,
+  `/**`,
+  ` * The 'up' function runs when the migration is applied.`,
+  ` *`,
+  ` * @param {import("kysely").Kysely<any>} db`,
+  ` * @returns {Promise<void>}`,
+  ` */`,
+  `async function up(db) {}`,
+  ``,
+  `/**`,
+  ` * The 'down' function runs when the migration is removed.`,
+  ` *`,
+  ` * @param {import("kysely").Kysely<any>} db`,
+  ` * @returns {Promise<void>}`,
+  ` */`,
+  `async function down(db) {}`,
   ``,
   `export { up, down };`,
 ].join("\n");
@@ -140,13 +168,14 @@ export async function undoAll() {
  *
  * @param name The label of the migration to generate.
  */
-export async function generate(name: string) {
+export async function generate(name: string, opts = { js: false }) {
   const { migrationsFolder } = getConfig().match((i) => i, exitFailure);
 
   // generate the migration file
   let feed = ora({ stream: process.stdout }).start("Generating migration ...");
   const migrationId = `${Date.now()}_${name}`;
   await fs.ensureDir(migrationsFolder);
-  await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.ts`), template);
+  if (opts.js) await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.js`), templateJs);
+  else await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.ts`), templateTs);
   feed.succeed(`Created migration file: "${migrationId}.ts"`);
 }
