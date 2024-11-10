@@ -26,9 +26,7 @@ beforeEach(async () => {
   process.chdir(TEST_DIR);
 });
 
-afterEach(async () => {
-  await fs.rm(TEST_DIR, { recursive: true, force: true });
-});
+afterEach(() => fs.rm(TEST_DIR, { recursive: true, force: true }));
 
 describe("Config is correctly loaded", () => {
   test("with 'kyselyx.config.ts' in root, implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {

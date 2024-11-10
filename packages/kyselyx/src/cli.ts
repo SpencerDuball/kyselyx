@@ -104,6 +104,7 @@ async function main() {
   program
     .command("generate:migration")
     .argument("<name>", "The name of the migration to create.")
+    .option("--js", "Generate a JavaScript migration file.")
     .summary("Generates a new migration file")
     .description(
       "Creates a new migration file with the specified name. Note that the name will have a timestamp prepended to it.",

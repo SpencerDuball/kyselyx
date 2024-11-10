@@ -26,7 +26,7 @@ beforeEach(async () => {
 afterEach(() => fs.rm(TEST_DIR, { recursive: true, force: true }));
 
 describe("function 'generate'", () => {
-  test("should generate a migration file", async () => {
+  test("should generate all TS migration files", async () => {
     await setupKyselyxConfigV1(TEST_DIR);
 
     // create migrations
@@ -39,6 +39,36 @@ describe("function 'generate'", () => {
     expect(migrations.find((f) => /\d+_users\.ts/.test(f))).not.toBeUndefined();
     expect(migrations.find((f) => /\d+_sample\.ts/.test(f))).not.toBeUndefined();
     expect(migrations.find((f) => /\d+_peanut_butter\.ts/.test(f))).not.toBeUndefined();
+  });
+
+  test("should generate all JS migration files", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations
+    await asyncExec(`node ${CLI_PATH} generate:migration users --js`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample --js`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter --js`).catch(exitFailure);
+
+    // check if migrations were created
+    const migrations = await fs.readdir(path.resolve(TEST_DIR, "migrations"));
+    expect(migrations.find((f) => /\d+_users\.js/.test(f))).not.toBeUndefined();
+    expect(migrations.find((f) => /\d+_sample\.js/.test(f))).not.toBeUndefined();
+    expect(migrations.find((f) => /\d+_peanut_butter\.js/.test(f))).not.toBeUndefined();
+  });
+
+  test("should generate both JS & TS migration files", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
+
+    // create migrations
+    await asyncExec(`node ${CLI_PATH} generate:migration users --js`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration sample`).catch(exitFailure);
+    await asyncExec(`node ${CLI_PATH} generate:migration peanut_butter --js`).catch(exitFailure);
+
+    // check if migrations were created
+    const migrations = await fs.readdir(path.resolve(TEST_DIR, "migrations"));
+    expect(migrations.find((f) => /\d+_users\.js/.test(f))).not.toBeUndefined();
+    expect(migrations.find((f) => /\d+_sample\.ts/.test(f))).not.toBeUndefined();
+    expect(migrations.find((f) => /\d+_peanut_butter\.js/.test(f))).not.toBeUndefined();
   });
 });
 
