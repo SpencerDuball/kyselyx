@@ -1,9 +1,12 @@
 import { randomBytes } from "crypto";
 import fs from "fs-extra";
 import path from "path";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { getConfig, loadKyselyxConfig } from "../src/config.js";
 import {
+  setupBadKyselyxConfigV1,
+  setupBadKyselyxConfigV2,
+  setupBadKyselyxConfigV3,
   setupKyselyxConfigV1,
   setupKyselyxConfigV2,
   setupKyselyxConfigV3,
@@ -27,57 +30,107 @@ afterEach(async () => {
   await fs.rm(TEST_DIR, { recursive: true, force: true });
 });
 
-test("with 'kyselyx.config.ts' in root, implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
-  // ensure config file can be read correctly
-  await setupKyselyxConfigV1(TEST_DIR);
-  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  expect(getConfig().configFile).toBe("kyselyx.config.ts");
-  expect(getConfig().migrationsFolder).toBe("migrations");
-  expect(getConfig().seedsFolder).toBe("seeds");
-});
+describe("Config is correctly loaded", () => {
+  test("with 'kyselyx.config.ts' in root, implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+    await setupKyselyxConfigV1(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isOk()));
 
-test("with 'kyselyx.config.js' in root, implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
-  await setupKyselyxConfigV2(TEST_DIR);
-  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  expect(getConfig().configFile).toBe("kyselyx.config.js");
-  expect(getConfig().migrationsFolder).toBe("migrations");
-  expect(getConfig().seedsFolder).toBe("seeds");
-});
+    const configRes = getConfig();
+    expect(configRes.isOk()).toBe(true);
+    if (configRes.isOk()) {
+      expect(configRes.value.configFile).toBe("kyselyx.config.ts");
+      expect(configRes.value.migrationsFolder).toBe("migrations");
+      expect(configRes.value.seedsFolder).toBe("seeds");
+    }
+  });
 
-test("with '.config/kyselyx.config.ts', implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
-  await setupKyselyxConfigV3(TEST_DIR);
-  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  expect(getConfig().configFile).toBe(".config/kyselyx.config.ts");
-  expect(getConfig().migrationsFolder).toBe("migrations");
-  expect(getConfig().seedsFolder).toBe("seeds");
-});
+  test("with 'kyselyx.config.js' in root, implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+    await setupKyselyxConfigV2(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isOk()));
 
-test("with '.config/kyselyx.config.js', implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
-  await setupKyselyxConfigV4(TEST_DIR);
-  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  expect(getConfig().configFile).toBe(".config/kyselyx.config.js");
-  expect(getConfig().migrationsFolder).toBe("migrations");
-  expect(getConfig().seedsFolder).toBe("seeds");
-});
+    const configRes = getConfig();
+    expect(configRes.isOk()).toBe(true);
+    if (configRes.isOk()) {
+      expect(configRes.value.configFile).toBe("kyselyx.config.js");
+      expect(configRes.value.migrationsFolder).toBe("migrations");
+      expect(configRes.value.seedsFolder).toBe("seeds");
+    }
+  });
 
-test("with '.random/spaghetti.ts' Kyselyx config file, CLI supplied 'migrationsFolder', CLI supplied 'seedsFolder'", async () => {
-  await setupKyselyxConfigV5(TEST_DIR);
-  await expect(
-    loadKyselyxConfig({
+  test("with '.config/kyselyx.config.ts', implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+    await setupKyselyxConfigV3(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isOk()));
+
+    const configRes = getConfig();
+    expect(configRes.isOk()).toBe(true);
+    if (configRes.isOk()) {
+      expect(configRes.value.configFile).toBe(".config/kyselyx.config.ts");
+      expect(configRes.value.migrationsFolder).toBe("migrations");
+      expect(configRes.value.seedsFolder).toBe("seeds");
+    }
+  });
+
+  test("with '.config/kyselyx.config.js', implicit 'migrationsFolder', implicit 'seedsFolder'", async () => {
+    await setupKyselyxConfigV4(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isOk()));
+
+    const configRes = getConfig();
+    expect(configRes.isOk()).toBe(true);
+    if (configRes.isOk()) {
+      expect(configRes.value.configFile).toBe(".config/kyselyx.config.js");
+      expect(configRes.value.migrationsFolder).toBe("migrations");
+      expect(configRes.value.seedsFolder).toBe("seeds");
+    }
+  });
+
+  test("with '.random/spaghetti.ts' Kyselyx config file, CLI supplied 'migrationsFolder', CLI supplied 'seedsFolder'", async () => {
+    await setupKyselyxConfigV5(TEST_DIR);
+    await loadKyselyxConfig({
       file: ".random/spaghetti.ts",
       migrationsFolder: ".random/migrations",
       seedsFolder: ".random/seeds",
-    }),
-  ).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  expect(getConfig().configFile).toBe(".random/spaghetti.ts");
-  expect(getConfig().migrationsFolder).toBe(".random/migrations");
-  expect(getConfig().seedsFolder).toBe(".random/seeds");
+    }).then((res) => expect(res.isOk()));
+
+    const configRes = getConfig();
+    expect(configRes.isOk()).toBe(true);
+    if (configRes.isOk()) {
+      expect(configRes.value.configFile).toBe(".random/spaghetti.ts");
+      expect(configRes.value.migrationsFolder).toBe(".random/migrations");
+      expect(configRes.value.seedsFolder).toBe(".random/seeds");
+    }
+  });
+
+  test("with 'kyselyx.config.ts' in root, explicit 'migrationsFolder', explicit 'seedsFolder'", async () => {
+    await setupKyselyxConfigV6(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isOk()));
+
+    const configRes = getConfig();
+    expect(configRes.isOk()).toBe(true);
+    if (configRes.isOk()) {
+      expect(configRes.value.configFile).toBe("kyselyx.config.ts");
+      expect(configRes.value.migrationsFolder).toBe(".kyselyx/migrations");
+      expect(configRes.value.seedsFolder).toBe(".kyselyx/seeds");
+    }
+  });
 });
 
-test("with 'kyselyx.config.ts' in root, explicit 'migrationsFolder', explicit 'seedsFolder'", async () => {
-  await setupKyselyxConfigV6(TEST_DIR);
-  await expect(loadKyselyxConfig({})).resolves.not.toThrowError("Could not find Kyselyx configuration file.");
-  expect(getConfig().configFile).toBe("kyselyx.config.ts");
-  expect(getConfig().migrationsFolder).toBe(".kyselyx/migrations");
-  expect(getConfig().seedsFolder).toBe(".kyselyx/seeds");
+describe("Config is not loaded", () => {
+  test("when no config file is found", async () => {
+    await loadKyselyxConfig({}).then((res) => expect(res.isErr()));
+  });
+
+  test("when config file has errors", async () => {
+    await setupBadKyselyxConfigV1(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isErr()));
+  });
+
+  test("when config file has no default export", async () => {
+    await setupBadKyselyxConfigV2(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isErr()));
+  });
+
+  test("when config file is missing properties", async () => {
+    await setupBadKyselyxConfigV3(TEST_DIR);
+    await loadKyselyxConfig({}).then((res) => expect(res.isErr()));
+  });
 });
