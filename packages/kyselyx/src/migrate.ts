@@ -3,7 +3,7 @@ import { NO_MIGRATIONS, type NoMigrations } from "kysely";
 import ora from "ora";
 import path from "path";
 import { getConfig } from "./config.js";
-import { MigrationError } from "./errors.js";
+import { FileSystemError, MigrationError } from "./errors.js";
 import { doesNameMatch, exitFailure, getMigrations, getMigrator, isNoMigrations, type Migration } from "./utils.js";
 
 const templateTs = [
@@ -62,7 +62,7 @@ export async function migrate(name?: string) {
   if (name) migration = allMigrations.find(doesNameMatch(name));
   else migration = allMigrations.at(-1);
 
-  if (!migration) exitFailure(new MigrationError("Could not find migration to migrate to."));
+  if (!migration) exitFailure(new MigrationError("cf085c", "Could not find migration to migrate to."));
 
   // apply the migrations
   feed.start("Applying migrations ...");
@@ -75,7 +75,7 @@ export async function migrate(name?: string) {
     else if (it.status === "Error") feed.fail(`Failed to apply migration ${it.migrationName}.`);
   });
 
-  if (error) exitFailure(new MigrationError("Error applying migrations."));
+  if (error) exitFailure(new MigrationError("1ac167", "Error applying migrations."));
   else feed.succeed("Migrations applied successfully.");
 }
 
@@ -98,7 +98,8 @@ export async function undo(name?: string) {
     const namedMigration = appliedMigrations.find(doesNameMatch(name));
     if (namedMigration) {
       const namedMigrationIdx = appliedMigrations.indexOf(namedMigration);
-      if (namedMigrationIdx === -1) exitFailure(new MigrationError("Could not find migration to rollback to."));
+      if (namedMigrationIdx === -1)
+        exitFailure(new MigrationError("7eb0e2", "Could not find migration to rollback to."));
       else if (namedMigrationIdx === 0) migration = NO_MIGRATIONS;
       else migration = appliedMigrations.at(namedMigrationIdx - 1);
     }
@@ -126,7 +127,7 @@ export async function undo(name?: string) {
     else if (it.status === "Error") feed.fail(`Failed to rollback migration ${it.migrationName}.`);
   });
 
-  if (error) exitFailure(new MigrationError("Error rolling back migrations."));
+  if (error) exitFailure(new MigrationError("bc184e", "Error rolling back migrations."));
   else feed.succeed("Migrations rolled back successfully.");
 }
 
@@ -159,7 +160,7 @@ export async function undoAll() {
     else if (it.status === "Error") feed.fail(`Failed to rollback migration ${it.migrationName}.`);
   });
 
-  if (error) exitFailure(new MigrationError("Error rolling back migrations."));
+  if (error) exitFailure(new MigrationError("a317f8", "Error rolling back migrations."));
   else feed.succeed("Migrations rolled back successfully.");
 }
 
@@ -176,12 +177,16 @@ export async function generate(name: string, opts = { js: false }) {
   // generate the migration file
   let feed = ora({ stream: process.stdout }).start("Generating migration ...");
   const migrationId = `${Date.now()}_${name}`;
-  await fs.ensureDir(migrationsFolder);
+  await fs.ensureDir(migrationsFolder).catch((e) => exitFailure(FileSystemError.fromThrown("353782")(e)));
   if (opts.js) {
-    await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.js`), templateJs);
+    await fs
+      .writeFile(path.resolve(migrationsFolder, `${migrationId}.js`), templateJs)
+      .catch((e) => exitFailure(FileSystemError.fromThrown("1d7ef4")(e)));
     feed.succeed(`Created migration file: "${migrationId}.js"`);
   } else {
-    await fs.writeFile(path.resolve(migrationsFolder, `${migrationId}.ts`), templateTs);
+    await fs
+      .writeFile(path.resolve(migrationsFolder, `${migrationId}.ts`), templateTs)
+      .catch((e) => exitFailure(FileSystemError.fromThrown("992638")(e)));
     feed.succeed(`Created migration file: "${migrationId}.ts"`);
   }
 }

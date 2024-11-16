@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { Migration, doesNameMatch, getNameParts } from "../src/utils";
+import { type Migration, doesNameMatch, getNameParts } from "../src/utils.js";
 
 /**
  * A helper function for creating a migration objects for testing.

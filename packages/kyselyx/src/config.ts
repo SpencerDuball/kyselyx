@@ -81,18 +81,8 @@ let _config: IConfig | null = null;
  * Note: This should be called only after `loadKyselyxConfig` has been called.
  */
 export function getConfig(): Result<IConfig, ConfigError> {
-  if (!_config) return err(new ConfigError("Kyselyx configuration not loaded."));
+  if (!_config) return err(new ConfigError("a7c8d1", "Kyselyx configuration not loaded."));
   else return ok(_config);
-}
-
-/**
- * Handles errors when importing the Kyselyx configuration file.
- *
- * @see loadKyselyxConfig This function is called by `loadKyselyxConfig`.
- */
-function handleImportErrors(err: any): ConfigError {
-  if (err instanceof Error) return new ConfigError(err.message);
-  else return new ConfigError("Could not load Kyselyx configuration file.");
 }
 
 /**
@@ -102,7 +92,7 @@ function handleImportErrors(err: any): ConfigError {
  */
 function getDefaultExport(module: any): Result<any, ConfigError> {
   if ("default" in module) return ok(module.default);
-  else return err(new ConfigError("Kyselyx configuration file must have a default export."));
+  else return err(new ConfigError("54eeac", "Kyselyx configuration file must have a default export."));
 }
 
 /**
@@ -118,7 +108,7 @@ function getConfigFile(filePath: string, cli: ICliOptions) {
       if (cli.migrationsFolder) config.migrationsFolder = cli.migrationsFolder;
       if (cli.seedsFolder) config.seedsFolder = cli.seedsFolder;
       return ok(config);
-    } else return err(parseCfg.error);
+    } else return err(ConfigError.fromThrown("9105f5")(parseCfg.error));
   };
 }
 
@@ -139,9 +129,9 @@ export async function loadKyselyxConfig(cli: ICliOptions): Promise<Result<void, 
     ];
     for (const p of possibleFilePaths) if (await fs.exists(p)) filePath = p;
   }
-  if (!filePath) return err(new ConfigError("Could not find Kyselyx configuration file."));
+  if (!filePath) return err(new ConfigError("884647", "Could not find Kyselyx configuration file."));
 
-  return ResultAsync.fromPromise(import(path.resolve(process.cwd(), filePath)), handleImportErrors)
+  return ResultAsync.fromPromise(import(path.resolve(process.cwd(), filePath)), ConfigError.fromThrown("7211f9"))
     .andThen(getDefaultExport)
     .andThen(getConfigFile(filePath, cli))
     .andThen((config) => {
