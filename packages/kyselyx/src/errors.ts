@@ -1,24 +1,28 @@
-export class ConfigError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConfigError";
+export class BaseError extends Error {
+  public readonly traceId: string;
+
+  constructor(traceId: string, message?: string, options?: ErrorOptions) {
+    super(`(${traceId}) ${message}`, { cause: options?.cause });
+    this.name = this.constructor.name;
+    this.traceId = traceId;
+  }
+
+  /**
+   * Creates an error from a thrown item.
+   *
+   * @param traceId The unique identifier for the error. Typically a 6 character hex string.
+   * @param message An optional default message when the thrown item is not an error.
+   */
+  static fromThrown<T extends typeof BaseError>(this: T, traceId: string, message?: string) {
+    return (e: any) => {
+      if (e instanceof Error) return new this(traceId, e.message, { cause: e }) as InstanceType<T>;
+      else return new this(traceId, message || `Un unexpected item was thrown: ${e}`) as InstanceType<T>;
+    };
   }
 }
-export class MigrationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "MigrationError";
-  }
-}
-export class SeedError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "SeedError";
-  }
-}
-export class KyselyError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "KyselyError";
-  }
-}
+
+export class ConfigError extends BaseError {}
+export class MigrationError extends BaseError {}
+export class SeedError extends BaseError {}
+export class KyselyError extends BaseError {}
+export class FileSystemError extends BaseError {}
