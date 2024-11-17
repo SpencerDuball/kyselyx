@@ -59,7 +59,7 @@ async function main() {
     )
     .summary("Run pending seeds")
     .description("Runs all pending seeds up to (and including) the optionally specified seed.")
-    .action((name) => console.log(`Hello from db:seed [${name}]!`));
+    .action(seed.seed);
   program
     .command("db:seed:undo")
     .argument(
@@ -68,12 +68,12 @@ async function main() {
     )
     .summary("Reverts applied seeds")
     .description("Reverts a single seed, or all seeds up to (and including) the optionally specified seed.")
-    .action((name) => console.log(`Hello from db:seed:undo [${name}]!`));
+    .action(seed.undo);
   program
     .command("db:seed:undo:all")
     .summary("Reverts all applied seeds")
     .description("Reverts all applied seeds.")
-    .action(() => console.log("Hello from db:seed:undo:all!"));
+    .action(seed.undoAll);
   program
     .command("db:seed:status")
     .summary("Shows the status of all seeds")
