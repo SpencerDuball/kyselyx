@@ -35,6 +35,7 @@ function tempalateJs(configFile: string, seedFile: string) {
     ` */`,
     `async function down({ db }) {}`,
     ``,
+    `export { up, down };`,
   ].join("\n");
 }
 
@@ -65,6 +66,7 @@ function templateTs(configFile: string, seedFile: string) {
     ` */`,
     `async function down({ db }: IStores): Promise<void> {}`,
     ``,
+    `export { up, down };`,
   ].join("\n");
 }
 
