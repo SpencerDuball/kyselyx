@@ -734,7 +734,7 @@ describe("function 'seed'", () => {
   });
 });
 
-describe.only("function 'undo'", () => {
+describe("function 'undo'", () => {
   test("when no seeds applied", async () => {
     await setupKyselyxConfigV1(TEST_DIR);
 

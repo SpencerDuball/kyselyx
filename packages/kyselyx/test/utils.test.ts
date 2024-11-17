@@ -315,7 +315,7 @@ describe("getTargetSeed", () => {
       );
 
       expect(isNoSeeds(targetSeed)).toBe(false);
-      if (!isNoSeeds(targetSeed)) expect(targetSeed.name).toMatch(/\d+_users_2$/);
+      if (!isNoSeeds(targetSeed)) expect(targetSeed.name).toMatch(/\d+_sample_2$/);
     });
 
     test("and migration=valid, seed=valid (less than max seed)", async () => {
@@ -394,12 +394,12 @@ describe("getTargetSeed", () => {
       const sampleMigration = allMigrations.find((m) => /\d+_sample$/.test(m.name));
       if (!sampleMigration) throw new Error("Sample migration not found!");
 
-      // get the 'users' seed
-      const usersSeed = allSeeds.find((s) => /\d+_sample$/.test(s.name));
-      if (!usersSeed) throw new Error("Users seed not found!");
+      // get the 'peanut_butter' seed
+      const pbSeed = allSeeds.find((s) => /\d+_peanut_butter$/.test(s.name));
+      if (!pbSeed) throw new Error("Peanut Butter seed not found!");
 
       // get target seed
-      const targetSeed = (await getTargetSeed({ migration: sampleMigration, seed: usersSeed })).match(
+      const targetSeed = (await getTargetSeed({ migration: sampleMigration, seed: pbSeed })).match(
         (i) => i,
         (e) => e,
       );

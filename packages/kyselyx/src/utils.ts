@@ -201,7 +201,9 @@ export async function getTargetSeed(props: IGetTargetSeedProps) {
     if (seeds instanceof Error) return err(seeds);
 
     // get the maximum timestamp for the seeds
-    const maxTimestamp = props.migration === allMigrations.at(-1) ? Infinity : props.migration.timestamp;
+    const migrationIdx = allMigrations.findIndex((m) => m.name === (props.migration as Migration).name);
+    const maxTimestamp =
+      props.migration === allMigrations.at(-1) ? Infinity : allMigrations.at(migrationIdx + 1)!.timestamp;
     if (props.seed) {
       // if there is a named seed, ensure it's timestamp is less than the max timestamp
       if (props.seed.timestamp <= maxTimestamp) return ok(props.seed);

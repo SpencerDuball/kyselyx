@@ -3,8 +3,19 @@ import { NO_MIGRATIONS, type NoMigrations } from "kysely";
 import ora from "ora";
 import path from "path";
 import { getConfig } from "./config.js";
-import { FileSystemError, MigrationError } from "./errors.js";
-import { doesNameMatch, exitFailure, getMigrations, getMigrator, isNoMigrations, type Migration } from "./utils.js";
+import { ConfigError, FileSystemError, MigrationError, SeedError } from "./errors.js";
+import { NO_SEEDS } from "./seeder/seed.js";
+import {
+  doesNameMatch,
+  exitFailure,
+  getMigrations,
+  getMigrator,
+  getSeeder,
+  getTargetSeed,
+  isNoMigrations,
+  isNoSeeds,
+  type Migration,
+} from "./utils.js";
 
 const templateTs = [
   `import { Kysely, sql } from "kysely";`,
@@ -114,7 +125,32 @@ export async function undo(name?: string) {
     return;
   }
 
-  // TODO: Rollback applicable seeds
+  // find seed to rollback to
+  feed.start("Finding seed to rollback to ...");
+  (await getTargetSeed({ migration }))
+    .map((targetSeed) =>
+      getSeeder().map(async (seeder) => {
+        console.log("migration: ", migration);
+        console.log("targetSeed: ", targetSeed);
+        feed.start("Rolling back seeds ...");
+        const { error, results } = await seeder.seedTo(isNoSeeds(targetSeed) ? NO_SEEDS : targetSeed.name);
+        feed.clear();
+
+        // process the results
+        results?.forEach((it) => {
+          if (it.status === "Success") feed.succeed(`Dropped seed ${it.seedName} successfully.`);
+          else if (it.status === "Error") feed.fail(`Failed to drop seed ${it.seedName}.`);
+        });
+
+        if (error) exitFailure(new SeedError("c82c50", "Error dropping seeds."));
+        else feed.succeed("Seeds dropped successfully.");
+      }),
+    )
+    .mapErr((e) => {
+      if (e instanceof ConfigError) feed.succeed("No seeds to rollback.");
+      else exitFailure(new SeedError("c6d495", "Error rolling back seeds."));
+    });
+  feed.clear();
 
   // rollback the migrations
   feed.start("Rolling back migrations ...");
@@ -147,7 +183,30 @@ export async function undoAll() {
     return;
   }
 
-  // TODO: Rollback applicable seeds
+  // find seed to rollback to
+  feed.start("Finding seed to rollback to ...");
+  (await getTargetSeed({ migration: NO_MIGRATIONS }))
+    .map((targetSeed) => {
+      return getSeeder().map(async (seeder) => {
+        feed.start("Rolling back seeds ...");
+        const { error, results } = await seeder.seedTo(isNoSeeds(targetSeed) ? NO_SEEDS : targetSeed.name);
+        feed.clear();
+
+        // process the results
+        results?.forEach((it) => {
+          if (it.status === "Success") feed.succeed(`Dropped seed ${it.seedName} successfully.`);
+          else if (it.status === "Error") feed.fail(`Failed to drop seed ${it.seedName}.`);
+        });
+
+        if (error) exitFailure(new SeedError("c82c50", "Error dropping seeds."));
+        else feed.succeed("Seeds dropped successfully.");
+      });
+    })
+    .mapErr((e) => {
+      if (e instanceof ConfigError) feed.succeed("No seeds to rollback.");
+      else exitFailure(new SeedError("c6d495", "Error rolling back seeds."));
+    });
+  feed.clear();
 
   // rollback all migrations
   feed.start("Rolling back migrations ...");
