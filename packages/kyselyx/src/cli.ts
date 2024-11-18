@@ -2,6 +2,7 @@ import { Command } from "commander";
 import "tsx/esm";
 import { loadKyselyxConfig } from "./config.js";
 import * as migrate from "./migrate.js";
+import * as misc from "./misc.js";
 import * as seed from "./seed.js";
 
 async function main() {
@@ -87,19 +88,19 @@ async function main() {
     .description(
       "Reverts all seeds, migrations, and deletes all metadata (locks, seed/migration metadata) from the database. This is an escape hatch to reset a database to 'like new'.",
     )
-    .action(() => console.log("Hello from db:purge!"));
+    .action(misc.purge);
   program
     .command("db:setup")
     .summary("Runs all pending migrations and seeds")
     .description("Applies all pending migrations and seeds.")
-    .action(() => console.log("Hello from db:setup!"));
+    .action(misc.setup);
   program
     .command("db:reset")
     .summary("Purges the database and then runs all migrations and seeds")
     .description(
       "First applies a 'db:purge' and then a 'db:setup'. This will clear all data in the database and then reapply all migrations and seeds.",
     )
-    .action(() => console.log("Hello from db:reset!"));
+    .action(misc.reset);
 
   // define commands for generating migrations and seeds
   program
