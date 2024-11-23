@@ -195,6 +195,39 @@ export async function undoAll() {
 }
 
 /**
+ * Shows the status of all migrations.
+ */
+export async function status() {
+  const seeder = getSeeder().match(
+    (i) => i,
+    () => null,
+  );
+  if (!seeder) {
+    console.log("No seeds to show status for.");
+    return;
+  }
+
+  // retrieve all migrations
+  let feed = ora({ stream: process.stdout }).start("Getting migrations ...");
+  const { allSeeds, appliedSeeds, unappliedSeeds } = (await getSeeds(seeder)).match((i) => i, exitFailure);
+  feed.clear();
+
+  // print the status
+  let statusLine = [
+    `Total Seeds: ${allSeeds.length}`,
+    `Applied Seeds: ${appliedSeeds.length}`,
+    `Unapplied Seeds: ${unappliedSeeds.length}`,
+  ].join("     ");
+  console.log(statusLine);
+  console.log(Array(statusLine.length).fill("-").join(""));
+
+  for (let seed of allSeeds) {
+    if (seed.executedAt) feed.succeed(`Migration ${seed.name} applied.`);
+    else feed.fail(`Migration ${seed.name} not applied.`);
+  }
+}
+
+/**
  * Generates a new seed file.
  *
  * @param name The label of the seed to generate.
