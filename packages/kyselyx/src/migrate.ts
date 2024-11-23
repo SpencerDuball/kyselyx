@@ -224,6 +224,35 @@ export async function undoAll() {
 }
 
 /**
+ * Shows the status of all migrations.
+ */
+export async function status() {
+  const migrator = getMigrator().match((i) => i, exitFailure);
+
+  // retrieve all migrations
+  let feed = ora({ stream: process.stdout }).start("Getting migrations ...");
+  const { allMigrations, appliedMigrations, unappliedMigrations } = (await getMigrations(migrator)).match(
+    (i) => i,
+    exitFailure,
+  );
+  feed.clear();
+
+  // print the status
+  let statusLine = [
+    `Total Migrations: ${allMigrations.length}`,
+    `Applied Migrations: ${appliedMigrations.length}`,
+    `Unapplied Migrations: ${unappliedMigrations.length}`,
+  ].join("     ");
+  console.log(statusLine);
+  console.log(Array(statusLine.length).fill("-").join(""));
+
+  for (let migration of allMigrations) {
+    if (migration.executedAt) feed.succeed(`Migration ${migration.name} applied.`);
+    else feed.fail(`Migration ${migration.name} not applied.`);
+  }
+}
+
+/**
  * Generates a new migration file.
  *
  * @param name The label of the migration to generate.

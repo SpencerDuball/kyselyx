@@ -49,7 +49,7 @@ async function main() {
     .command("db:migrate:status")
     .summary("Shows the status of all migrations")
     .description("Prints info about each migration and it's status.")
-    .action(() => console.log("Hello from db:migrate:status!"));
+    .action(migrate.status);
 
   // define commands for seeds
   program
@@ -79,7 +79,7 @@ async function main() {
     .command("db:seed:status")
     .summary("Shows the status of all seeds")
     .description("Prints info about each seed and it's status.")
-    .action(() => console.log("Hello from db:seed:status!"));
+    .action(seed.status);
 
   // define commands that operate on both seeds & migrations
   program
