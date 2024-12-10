@@ -253,9 +253,7 @@ describe("function 'seed'", () => {
 
       // apply migrations & seeds
       await asyncExec(`node ${CLI_PATH} db:migrate`).catch(exitFailure);
-      await expect(() =>
-        asyncExec(`node ${CLI_PATH} db:seed breanna_coffee`).catch(exitFailure),
-      ).rejects.toThrowError();
+      await expect(() => asyncExec(`node ${CLI_PATH} db:seed breanna_coffee`)).rejects.toThrowError();
 
       // load kyselyx config & get seeds
       await loadKyselyxConfig({});
@@ -447,9 +445,7 @@ describe("function 'seed'", () => {
 
       // apply migrations & seeds
       await asyncExec(`node ${CLI_PATH} db:migrate sample`).catch(exitFailure);
-      await expect(() =>
-        asyncExec(`node ${CLI_PATH} db:seed breanna_coffee`).catch(exitFailure),
-      ).rejects.toThrowError();
+      await expect(() => asyncExec(`node ${CLI_PATH} db:seed breanna_coffee`)).rejects.toThrowError();
 
       // load kyselyx config & get seeds
       await loadKyselyxConfig({});
@@ -487,7 +483,7 @@ describe("function 'seed'", () => {
 
       // apply migrations & seeds
       await asyncExec(`node ${CLI_PATH} db:migrate sample`).catch(exitFailure);
-      await expect(() => asyncExec(`node ${CLI_PATH} db:seed peanut_butter`).catch(exitFailure)).rejects.toThrowError();
+      await expect(() => asyncExec(`node ${CLI_PATH} db:seed peanut_butter`)).rejects.toThrowError();
 
       // load kyselyx config & get seeds
       await loadKyselyxConfig({});
@@ -674,9 +670,7 @@ describe("function 'seed'", () => {
       await asyncExec(`node ${CLI_PATH} generate:seed peanut_butter_2`).catch(exitFailure);
 
       // apply migrations & seeds
-      await expect(() =>
-        asyncExec(`node ${CLI_PATH} db:seed breanna_coffee`).catch(exitFailure),
-      ).rejects.toThrowError();
+      await expect(() => asyncExec(`node ${CLI_PATH} db:seed breanna_coffee`)).rejects.toThrowError();
 
       // load kyselyx config & get seeds
       await loadKyselyxConfig({});
@@ -713,7 +707,7 @@ describe("function 'seed'", () => {
       await asyncExec(`node ${CLI_PATH} generate:seed peanut_butter_2`).catch(exitFailure);
 
       // apply migrations & seeds
-      await expect(() => asyncExec(`node ${CLI_PATH} db:seed users`).catch(exitFailure)).rejects.toThrowError();
+      await expect(() => asyncExec(`node ${CLI_PATH} db:seed users`)).rejects.toThrowError();
 
       // load kyselyx config & get seeds
       await loadKyselyxConfig({});
