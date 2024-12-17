@@ -1,0 +1,53 @@
+{
+  "include": ["src/**/*.ts", "kyselyx.config.ts"],
+  "compilerOptions": {
+    // For all options specified, see the cheatsheet where they come from:
+    // https://www.totaltypescript.com/tsconfig-cheat-sheet
+
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+
+    /* If transpiling with TypeScript: */
+    // "module": "NodeNext",
+    // "outDir": "dist",
+    // "sourceMap": true,
+    //
+    // ^^^ We are transpiling with Rollup, so we don't need these options.
+
+    /* AND if you're building for a library: */
+    // "declaration": true,
+    // "declarationDir": "dist", // We want the .d.ts to be output.
+
+    /* AND if you're building for a library in a monorepo: */
+    // "composite": true,
+    // "declarationMap": true,
+    //
+    // ^^^ While this git project is a monorepo, this package is not composed of
+    // subpackages within a monorepo, so we don't need these options.
+
+    /* If NOT transpiling with TypeScript: */
+    // This is typically "preserve", but NodeNext enforces ESM in the TS source code.
+    "module": "NodeNext",
+    "noEmit": true,
+
+    /* If your code runs in the DOM: */
+    // "lib": ["es2022", "dom", "dom.iterable"],
+    //
+    // ^^^ This library will run in Node.js, so we don't need these options.
+
+    /* If your code doesn't run in the DOM: */
+    "lib": ["es2022"]
+  }
+}
