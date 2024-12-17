@@ -1,0 +1,24 @@
+{
+  "name": "playground",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "A package for manual testing.",
+  "author": "Spencer Duball <spencerduball@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "db:create": "tsx ./scripts/create_database.ts"
+  },
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "better-sqlite3": "^11.3.0",
+    "fs-extra": "^11.2.0",
+    "kysely": "^0.27.4",
+    "kyselyx": "workspace:^",
+    "tsx": "^4.19.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.7.4"
+  }
+}
