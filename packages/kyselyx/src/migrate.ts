@@ -1,6 +1,6 @@
 import fs from "fs-extra";
 import { NO_MIGRATIONS, type NoMigrations } from "kysely";
-import ora from "ora";
+import ora, { type Options } from "ora";
 import path from "path";
 import { getConfig } from "./config.js";
 import { ConfigError, FileSystemError, MigrationError, SeedError } from "./errors.js";
@@ -59,12 +59,14 @@ const templateJs = [
  * Applied all migrations up to the latest migration, or to the specified migration.
  *
  * @param name The name of the migration to migrate to.
+ * @param opts Options for running the script.
+ * @param opts.ora Options for the spinner.
  */
-export async function migrate(name?: string) {
+export async function migrate(name?: string, opts?: { ora?: Options }) {
   const migrator = getMigrator().match((i) => i, exitFailure);
 
   // retrieve all migrations
-  let feed = ora({ stream: process.stdout }).start("Getting migrations ...");
+  let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting migrations ...");
   const { allMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
 
   // find the migration
@@ -100,12 +102,14 @@ export async function migrate(name?: string) {
  * Undo the last migration or all migrations up to the specified name provided.
  *
  * @param name The name of the migration to rollback to.
+ * @param opts Options for running the script.
+ * @param opts.ora Options for the spinner.
  */
-export async function undo(name?: string) {
+export async function undo(name?: string, opts?: { ora?: Options }) {
   const migrator = getMigrator().match((i) => i, exitFailure);
 
   // retrieve all migrations
-  let feed = ora({ stream: process.stdout }).start("Getting migrations ...");
+  let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting migrations ...");
   const { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
 
   // find the migration to rollback to
@@ -171,12 +175,15 @@ export async function undo(name?: string) {
 
 /**
  * Undo all migrations.
+ *
+ * @param opts Options for running the script.
+ * @param opts.ora Options for the spinner.
  */
-export async function undoAll() {
+export async function undoAll(opts?: { ora?: Options }) {
   const migrator = getMigrator().match((i) => i, exitFailure);
 
   // retrieve all migrations
-  let feed = ora({ stream: process.stdout }).start("Getting migrations ...");
+  let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting migrations ...");
   const { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
   feed.clear();
 
