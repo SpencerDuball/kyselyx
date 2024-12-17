@@ -1,5 +1,5 @@
 import fs from "fs-extra";
-import ora from "ora";
+import ora, { type Options } from "ora";
 import path from "path";
 import "tsx/esm"; // This MUST be imported for the tests to run properly!
 import { getConfig } from "./config.js";
@@ -78,12 +78,14 @@ function templateTs(configFile: string, seedFile: string) {
  * the last applied migration.
  *
  * @param name The name of the seed to seed to.
+ * @param opts Options for running the script.
+ * @param opts.ora Options for the spinner.
  */
-export async function seed(name?: string) {
+export async function seed(name?: string, opts?: { ora?: Options }) {
   const seeder = getSeeder().match((i) => i, exitFailure);
 
   // retrieve all seeds
-  let feed = ora({ stream: process.stdout }).start("Getting seeds ...");
+  let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting seeds ...");
   const { allSeeds } = (await getSeeds(seeder)).match((i) => i, exitFailure);
   feed.clear();
 
@@ -118,12 +120,14 @@ export async function seed(name?: string) {
  * Undo the last seed or all seeds up to the specified name provided.
  *
  * @param name The name of the seed to rollback to.
+ * @param opts Options for running the script.
+ * @param opts.ora Options for the spinner.
  */
-export async function undo(name?: string) {
+export async function undo(name?: string, opts?: { ora?: Options }) {
   const seeder = getSeeder().match((i) => i, exitFailure);
 
   // retrieve all seeds
-  let feed = ora({ stream: process.stdout }).start("Getting seeds ...");
+  let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting seeds ...");
   const { appliedSeeds } = (await getSeeds(seeder)).match((i) => i, exitFailure);
   feed.clear();
 
@@ -165,12 +169,15 @@ export async function undo(name?: string) {
 
 /**
  * Undo all seeds.
+ *
+ * @param opts Options for running the script.
+ * @param opts.ora Options for the spinner.
  */
-export async function undoAll() {
+export async function undoAll(opts: { ora?: Options }) {
   const seeder = getSeeder().match((i) => i, exitFailure);
 
   // retrieve all seeds
-  let feed = ora({ stream: process.stdout }).start("Getting seeds ...");
+  let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting seeds ...");
   const { appliedSeeds } = (await getSeeds(seeder)).match((i) => i, exitFailure);
   feed.clear();
 
