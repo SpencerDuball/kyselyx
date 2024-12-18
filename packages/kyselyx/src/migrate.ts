@@ -8,7 +8,6 @@ import { NO_SEEDS } from "./seeder/seed.js";
 import {
   doesNameMatch,
   exitFailure,
-  exitOk,
   getMigrations,
   getMigrator,
   getSeeder,
@@ -75,7 +74,10 @@ export async function migrate(name?: string, opts?: { ora?: Options }) {
   if (name) migration = allMigrations.find(doesNameMatch(name));
   else migration = allMigrations.at(-1);
 
-  if (!migration) exitOk(new MigrationError("cf085c", "Could not find migration to migrate to."));
+  if (!migration) {
+    feed.fail("Could not find migration to migrate to.");
+    return;
+  }
 
   // apply the migrations
   feed.start("Applying migrations ...");
@@ -96,6 +98,8 @@ export async function migrate(name?: string, opts?: { ora?: Options }) {
   if (numErr > 0) exitFailure(new MigrationError("d42ad3", `Failed to apply ${numErr} migrations.`));
 
   if (error) exitFailure(new MigrationError("1ac167", "Error applying migrations."));
+
+  if (numApplied === 0) feed.succeed("No migrations to apply.");
   else feed.succeed(`Applied ${numApplied} migration(s) up to "${lastAppliedMigration}" successfully.`);
 }
 
@@ -119,8 +123,10 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
     const namedMigration = appliedMigrations.find(doesNameMatch(name));
     if (namedMigration) {
       const namedMigrationIdx = appliedMigrations.indexOf(namedMigration);
-      if (namedMigrationIdx === -1) exitOk(new MigrationError("7eb0e2", "Could not find migration to rollback to."));
-      else if (namedMigrationIdx === 0) migration = NO_MIGRATIONS;
+      if (namedMigrationIdx === -1) {
+        feed.fail("Could not find migration to rollback to.");
+        return;
+      } else if (namedMigrationIdx === 0) migration = NO_MIGRATIONS;
       else migration = appliedMigrations.at(namedMigrationIdx - 1);
     }
   } else {
@@ -129,10 +135,12 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
   }
 
   if (!migration) {
-    if (name) exitOk(new MigrationError("7263fb", "Could not find migration to rollback to."));
+    if (name) feed.fail("Could not find migration to rollback to.");
     else feed.succeed(`No migrations to rollback.`);
     return;
   }
+
+  let [numSeedsDropped, numMigrationsDropped] = [0, 0];
 
   // find seed to rollback to
   feed.text = "Finding seed to rollback to ...";
@@ -142,14 +150,11 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
         feed.text = "Rolling back seeds ...";
         const { error, results } = await seeder.seedTo(isNoSeeds(targetSeed) ? NO_SEEDS : targetSeed.name);
 
-        // process the results
         results?.forEach((it) => {
-          if (it.status === "Success") feed.succeed(`Dropped seed ${it.seedName} successfully.`);
-          else if (it.status === "Error") feed.fail(`Failed to drop seed ${it.seedName}.`);
+          if (it.status === "Success") numSeedsDropped += 1;
         });
 
         if (error) exitFailure(new SeedError("c82c50", "Error dropping seeds."));
-        else feed.succeed("Seeds dropped successfully.");
       }),
     )
     .mapErr((e) => {
@@ -163,14 +168,13 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
   const { error, results } = await migrator.migrateTo(isNoMigrations(migration) ? NO_MIGRATIONS : migration.name);
   feed.clear();
 
-  // process the results
   results?.forEach((it) => {
-    if (it.status === "Success") feed.succeed(`Rolled back migration ${it.migrationName} successfully.`);
-    else if (it.status === "Error") feed.fail(`Failed to rollback migration ${it.migrationName}.`);
+    if (it.status === "Success") numMigrationsDropped += 1;
   });
 
   if (error) exitFailure(new MigrationError("bc184e", "Error rolling back migrations."));
-  else feed.succeed("Migrations rolled back successfully.");
+
+  feed.succeed(`Rolled back ${numMigrationsDropped} migration(s) and ${numSeedsDropped} seed(s).`);
 }
 
 /**
@@ -185,12 +189,13 @@ export async function undoAll(opts?: { ora?: Options }) {
   // retrieve all migrations
   let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting migrations ...");
   const { appliedMigrations } = (await getMigrations(migrator)).match((i) => i, exitFailure);
-  feed.clear();
 
   if (appliedMigrations.length === 0) {
     feed.fail("No migrations to rollback.");
     return;
   }
+
+  let [numSeedsDropped, numMigrationsDropped] = [0, 0];
 
   // find seed to rollback to
   feed.start("Finding seed to rollback to ...");
@@ -203,12 +208,10 @@ export async function undoAll(opts?: { ora?: Options }) {
 
         // process the results
         results?.forEach((it) => {
-          if (it.status === "Success") feed.succeed(`Dropped seed ${it.seedName} successfully.`);
-          else if (it.status === "Error") feed.fail(`Failed to drop seed ${it.seedName}.`);
+          if (it.status === "Success") numSeedsDropped += 1;
         });
 
         if (error) exitFailure(new SeedError("c82c50", "Error dropping seeds."));
-        else feed.succeed("Seeds dropped successfully.");
       });
     })
     .mapErr((e) => {
@@ -220,16 +223,15 @@ export async function undoAll(opts?: { ora?: Options }) {
   // rollback all migrations
   feed.start("Rolling back migrations ...");
   const { error, results } = await migrator.migrateTo(NO_MIGRATIONS);
-  feed.clear();
 
   // process the results
   results?.forEach((it) => {
-    if (it.status === "Success") feed.succeed(`Rolled back migration ${it.migrationName} successfully.`);
-    else if (it.status === "Error") feed.fail(`Failed to rollback migration ${it.migrationName}.`);
+    if (it.status === "Success") numMigrationsDropped += 1;
   });
 
   if (error) exitFailure(new MigrationError("a317f8", "Error rolling back migrations."));
-  else feed.succeed("Migrations rolled back successfully.");
+
+  feed.succeed(`Rolled back ${numMigrationsDropped} migration(s) and ${numSeedsDropped} seed(s).`);
 }
 
 /**
@@ -244,7 +246,7 @@ export async function status() {
     (i) => i,
     exitFailure,
   );
-  feed.clear();
+  feed.stop();
 
   // print the status
   let statusLine = [
@@ -254,11 +256,7 @@ export async function status() {
   ].join("     ");
   console.log(statusLine);
   console.log(Array(statusLine.length).fill("-").join(""));
-
-  for (let migration of allMigrations) {
-    if (migration.executedAt) feed.succeed(`Migration ${migration.name} applied.`);
-    else feed.fail(`Migration ${migration.name} not applied.`);
-  }
+  console.log(`Last Applied Migration: ${appliedMigrations.at(-1)?.name || "None"}`);
 }
 
 /**

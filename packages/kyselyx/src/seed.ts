@@ -5,7 +5,16 @@ import "tsx/esm"; // This MUST be imported for the tests to run properly!
 import { getConfig } from "./config.js";
 import { FileSystemError, SeedError } from "./errors.js";
 import { NO_SEEDS, type NoSeeds } from "./seeder/seed.js";
-import { doesNameMatch, exitFailure, getSeeder, getSeeds, getTargetSeed, isNoSeeds, type Seed } from "./utils.js";
+import {
+  doesNameMatch,
+  exitFailure,
+  exitOk,
+  getSeeder,
+  getSeeds,
+  getTargetSeed,
+  isNoSeeds,
+  type Seed,
+} from "./utils.js";
 
 /**
  * Returns the string contents of a new seed file.
@@ -99,21 +108,26 @@ export async function seed(name?: string, opts?: { ora?: Options }) {
   // get the target seed
   feed.start("Finding target seed ...");
   const targetSeed = (await getTargetSeed({ seed })).match((i) => i, exitFailure);
-  feed.clear();
 
   // apply the seeds
   feed.start("Applying seeds ...");
   const { error, results } = await seeder.seedTo(isNoSeeds(targetSeed) ? NO_SEEDS : targetSeed.name);
-  feed.clear();
+
+  let numSeedsApplied = 0;
+  let lastAppliedSeed: string | null = null;
 
   // process the results
   results?.forEach((it) => {
-    if (it.status === "Success") feed.succeed(`Applied seed ${it.seedName} successfully.`);
-    else if (it.status === "Error") feed.fail(`Failed to apply seed ${it.seedName}.`);
+    if (it.status === "Success") {
+      numSeedsApplied += 1;
+      lastAppliedSeed = it.seedName;
+    }
   });
 
   if (error) exitFailure(new SeedError("c6d495", "Error applying seeds."));
-  else feed.succeed("Seeds applied successfully.");
+
+  if (numSeedsApplied === 0) feed.succeed("No seeds to apply.");
+  else feed.succeed(`Applied ${numSeedsApplied} seeds up to ${lastAppliedSeed} successfully.`);
 }
 
 /**
@@ -129,7 +143,6 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
   // retrieve all seeds
   let feed = ora({ stream: process.stdout, ...opts?.ora }).start("Getting seeds ...");
   const { appliedSeeds } = (await getSeeds(seeder)).match((i) => i, exitFailure);
-  feed.clear();
 
   // find the seed to rollback to
   let seed: Seed | NoSeeds | undefined;
@@ -148,23 +161,24 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
 
   if (!seed) {
     if (name) feed.fail(`Could not find seed to rollback to.`);
-    else feed.fail(`No seeds to rollback.`);
+    else feed.succeed(`No seeds to rollback.`);
     return;
   }
 
   // rollback the seeds
   feed.start("Rolling back seeds ...");
   const { error, results } = await seeder.seedTo(isNoSeeds(seed) ? NO_SEEDS : seed.name);
-  feed.clear();
+
+  let numSeedsDropped = 0;
 
   // process the results
   results?.forEach((it) => {
-    if (it.status === "Success") feed.succeed(`Rolled back seed ${it.seedName} successfully.`);
-    else if (it.status === "Error") feed.fail(`Failed to rollback seed ${it.seedName}.`);
+    if (it.status === "Success") numSeedsDropped += 1;
   });
 
   if (error) exitFailure(new SeedError("bc184e", "Error rolling back seeds."));
-  else feed.succeed("Seeds rolled back successfully.");
+
+  feed.succeed(`Dropped ${numSeedsDropped} seed(s) successfully .`);
 }
 
 /**
@@ -182,7 +196,7 @@ export async function undoAll(opts: { ora?: Options }) {
   feed.clear();
 
   if (appliedSeeds.length === 0) {
-    feed.fail("No seeds to rollback.");
+    feed.succeed("No seeds to rollback.");
     return;
   }
 
@@ -191,33 +205,28 @@ export async function undoAll(opts: { ora?: Options }) {
   const { error, results } = await seeder.seedTo(NO_SEEDS);
   feed.clear();
 
+  let numSeedsDropped = 0;
+
   // process the results
   results?.forEach((it) => {
-    if (it.status === "Success") feed.succeed(`Rolled back seed ${it.seedName} successfully.`);
-    else if (it.status === "Error") feed.fail(`Failed to rollback seed ${it.seedName}.`);
+    if (it.status === "Success") numSeedsDropped += 1;
   });
 
   if (error) exitFailure(new SeedError("e2a656", "Error rolling back seeds."));
-  else feed.succeed("Seeds rolled back successfully.");
+
+  feed.succeed(`Rolled back ${numSeedsDropped} seeds rolled back successfully.`);
 }
 
 /**
  * Shows the status of all migrations.
  */
 export async function status() {
-  const seeder = getSeeder().match(
-    (i) => i,
-    () => null,
-  );
-  if (!seeder) {
-    console.log("No seeds to show status for.");
-    return;
-  }
+  const seeder = getSeeder().match((i) => i, exitOk);
 
   // retrieve all migrations
   let feed = ora({ stream: process.stdout }).start("Getting migrations ...");
   const { allSeeds, appliedSeeds, unappliedSeeds } = (await getSeeds(seeder)).match((i) => i, exitFailure);
-  feed.clear();
+  feed.stop();
 
   // print the status
   let statusLine = [
@@ -227,11 +236,7 @@ export async function status() {
   ].join("     ");
   console.log(statusLine);
   console.log(Array(statusLine.length).fill("-").join(""));
-
-  for (let seed of allSeeds) {
-    if (seed.executedAt) feed.succeed(`Migration ${seed.name} applied.`);
-    else feed.fail(`Migration ${seed.name} not applied.`);
-  }
+  console.log(`Last Applied Seed: ${appliedSeeds.at(-1)?.name || "None"}`);
 }
 
 /**
