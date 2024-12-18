@@ -2,7 +2,8 @@ export class BaseError extends Error {
   public readonly traceId: string;
 
   constructor(traceId: string, message?: string, options?: ErrorOptions) {
-    super(`(${traceId}) ${message}`, { cause: options?.cause });
+    if (message) super(`(${traceId}) ${message}`, { cause: options?.cause });
+    else super(`(${traceId})`, { cause: options?.cause });
     this.name = this.constructor.name;
     this.traceId = traceId;
   }
