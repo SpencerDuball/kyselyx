@@ -8,6 +8,7 @@ import { NO_SEEDS } from "./seeder/seed.js";
 import {
   doesNameMatch,
   exitFailure,
+  exitOk,
   getMigrations,
   getMigrator,
   getSeeder,
@@ -74,7 +75,7 @@ export async function migrate(name?: string, opts?: { ora?: Options }) {
   if (name) migration = allMigrations.find(doesNameMatch(name));
   else migration = allMigrations.at(-1);
 
-  if (!migration) exitFailure(new MigrationError("cf085c", "Could not find migration to migrate to."));
+  if (!migration) exitOk(new MigrationError("cf085c", "Could not find migration to migrate to."));
 
   // apply the migrations
   feed.start("Applying migrations ...");
@@ -118,8 +119,7 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
     const namedMigration = appliedMigrations.find(doesNameMatch(name));
     if (namedMigration) {
       const namedMigrationIdx = appliedMigrations.indexOf(namedMigration);
-      if (namedMigrationIdx === -1)
-        exitFailure(new MigrationError("7eb0e2", "Could not find migration to rollback to."));
+      if (namedMigrationIdx === -1) exitOk(new MigrationError("7eb0e2", "Could not find migration to rollback to."));
       else if (namedMigrationIdx === 0) migration = NO_MIGRATIONS;
       else migration = appliedMigrations.at(namedMigrationIdx - 1);
     }
@@ -129,7 +129,7 @@ export async function undo(name?: string, opts?: { ora?: Options }) {
   }
 
   if (!migration) {
-    if (name) exitFailure(new MigrationError("7263fb", "Could not find migration to rollback to."));
+    if (name) exitOk(new MigrationError("7263fb", "Could not find migration to rollback to."));
     else feed.succeed(`No migrations to rollback.`);
     return;
   }

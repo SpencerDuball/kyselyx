@@ -250,11 +250,29 @@ export async function getTargetSeed(props: IGetTargetSeedProps) {
 // -------------------------------------------------------------------------------------------------
 
 /**
- * Exits the process with a failure message.
+ * Exits the process with a non-zero exit code.
+ *
+ * This method should be used when an error is caught that is unexpected and should be treated as a
+ * failure.
+ *
+ * @param e The error triggering a failed exit.
  */
 export function exitFailure<T extends BaseError>(e: T): never {
   console.error(e.message);
   process.exit(1);
+}
+
+/**
+ * Exits the process with a zero exit code.
+ *
+ * This method should be used when an error is caught that is expected and should not be treated as
+ * a failure.
+ *
+ * @param e The error triggering a successful exit.
+ */
+export function exitOk<T extends BaseError>(e: T): never {
+  console.log(e.message);
+  process.exit(0);
 }
 
 /**

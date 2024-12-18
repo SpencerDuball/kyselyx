@@ -7,6 +7,7 @@ import * as seed from "./seed.js";
 
 async function main() {
   const program = new Command();
+  program.exitOverride(() => process.exit(0));
   program.name("kyselyx").description("A CLI for executing Kysely migrations and seeds.");
   program.option("-c, --config <path>", "Path to the Kyselyx configuration file.");
   program.option("-m, --migration-folder <path>", "Path to the folder where migrations are stored.");
@@ -122,7 +123,7 @@ async function main() {
     )
     .action(seed.generate);
 
-  program.parse();
+  await program.parseAsync();
 }
 
 main();
