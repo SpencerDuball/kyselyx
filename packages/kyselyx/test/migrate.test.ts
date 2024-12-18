@@ -198,7 +198,9 @@ describe("function 'migrate'", () => {
     const partialTimestamp = sample.timestamp.toString().slice(0, 3);
 
     // apply migrations
-    await expect(asyncExec(`node ${CLI_PATH} db:migrate ${partialTimestamp}_${sample.label}`)).rejects.toThrowError();
+    const { stdout } = await asyncExec(`node ${CLI_PATH} db:migrate ${partialTimestamp}_${sample.label}`);
+
+    expect(stdout).toMatch(/Could not find migration to migrate to./);
   });
 
   test("fails to apply migrations with valid 'timestamp' + invalid 'label'", async () => {
@@ -221,9 +223,9 @@ describe("function 'migrate'", () => {
     const partialTimestamp = sample.timestamp.toString().slice(-3);
 
     // apply migrations
-    await expect(
-      asyncExec(`node ${CLI_PATH} db:migrate ${partialTimestamp}_${sample.label}ayo`),
-    ).rejects.toThrowError();
+    const { stdout } = await asyncExec(`node ${CLI_PATH} db:migrate ${partialTimestamp}_${sample.label}ayo`);
+
+    expect(stdout).toMatch(/Could not find migration to migrate to./);
   });
 });
 
